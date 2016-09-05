@@ -5,9 +5,6 @@ from __future__ import print_function
 import os
 import struct
 import can
-import time
-
-BITRATE = 500000
 
 
 def send_one(bus):
@@ -89,29 +86,21 @@ class Status:
 
 
 if __name__ == "__main__":
-	bus = can.interface.Bus(bitrate=BITRATE)
-	mtr1 = MotorData()
-	mtr2 = MotorData()
-	status = Status()
+	bus = can.interface.Bus(bitrate=1e6)
 
-	last_print = 0
+	msg_counter = {
+			0x10: 0,
+			0x21: 0,
+			0x22: 0,
+			0x31: 0,
+			0x32: 0
+			}
+	printCnt = 0
 
 	# wait for messages and update data
 	for msg in bus:
-		arb_id = msg.arbitration_id
-		if arb_id == 0x010:
-			status.set_status(msg.data)
-		elif arb_id == 0x021:
-			mtr1.set_current_pos(msg.data)
-		elif arb_id == 0x022:
-			mtr2.set_current_pos(msg.data)
-		elif arb_id == 0x031:
-			mtr1.set_velcity(msg.data)
-		elif arb_id == 0x032:
-			mtr2.set_velcity(msg.data)
-
-		t = time.time()
-		if last_print < t - 1:
-			last_print = t
-			print("\r{}   \tMTR1: {}   \tMTR2: {}".format(
-				status.to_string(), mtr1.to_string(), mtr2.to_string()),)
+		msg_counter[msg.arbitration_id] += 1
+		if printCnt > 5000:
+			printCnt = 0
+			print(str(msg_counter[0x21] - msg_counter[0x31]) +"_"+ str(msg_counter[0x22] - msg_counter[0x32]))
+		printCnt += 1

@@ -9,7 +9,7 @@ import can
 import signal
 import sys
 
-
+BITRATE = 1e6
 QVAL = 2**24
 
 #-------------------------------------------------------------------------------
@@ -96,9 +96,14 @@ msg_disable_motor1 = can.Message(arbitration_id=0x000,
 		data=[0, 0, 0, 0, 0, 0, 0, 2],
 		extended_id=False)
 
+msg_ensable_system = can.Message(arbitration_id=0x000,
+		data=[0, 0, 0, 1, 0, 0, 0, 1],
+		extended_id=False)
+
 msg_disable_system = can.Message(arbitration_id=0x000,
 		data=[0, 0, 0, 0, 0, 0, 0, 1],
 		extended_id=False)
+
 
 def send_msg(bus, msg):
 	"""Send a single message on the CAN bus."""
@@ -189,11 +194,14 @@ class VelocityController:
 		self._pid = PID()
 		self._maxval = 9.0
 		self._iqref = 0
+		self._last_run = 0
 
 		self._pid.SetKp(Kp)
 		self._pid.SetKi(Ki)
 
 	def run(self, refspeed):
+		period = time.time() - self._last_run
+		self._last_run = time.time()
 		if self._status.mtr1_enabled and self._status.mtr1_ready:
 			error = refspeed - self._mtr1.velocity
 			u = self._pid.GenOut(error)
@@ -203,8 +211,8 @@ class VelocityController:
 			self._iqref = min(self._iqref, self._maxval)
 			self._iqref = max(self._iqref, -self._maxval)
 
-			print("Speed = {:.4f}\t\tIqRef = {:.4f}".format(
-				self._mtr1.velocity, self._iqref))
+			print("Speed = {:.4f}\t\tIqRef = {:.4f}\t\tdt [ms] = {:.0f}".format(
+				self._mtr1.velocity, self._iqref, period*1000.0))
 			self.send_mtr1_current(self._iqref)
 
 	def send_mtr1_current(self, iq_ref):
@@ -228,7 +236,7 @@ if __name__ == "__main__":
 	Kp = float(sys.argv[2])
 	Ki = float(sys.argv[3])
 
-	bus = can.interface.Bus(bitrate=250000)
+	bus = can.interface.Bus(bitrate=BITRATE)
 
 	print("Setup controller with Kp = {}, Ki = {}".format(Kp, Ki))
 	print("Goal speed: {}".format(goal_speed))
@@ -242,9 +250,15 @@ if __name__ == "__main__":
 			sys.exit(0)
 	signal.signal(signal.SIGINT, sigint_handler)
 
+	print("Enable system...")
+	send_msg(bus, msg_ensable_system)
+
 	print("Enable motor...")
 	vctrl.send_mtr1_current(0) # start with zero
 	send_msg(bus, msg_enable_motor1)
+
+	# wait a second for the initial messages to be handled
+	time.sleep(1)
 
 	# wait for messages and update data
 	for msg in bus:
