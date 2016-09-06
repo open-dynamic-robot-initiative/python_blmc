@@ -2,6 +2,7 @@
 Helper classes to decode data sent by the OptoForce sensor.
 """
 import ctypes
+import can
 from . import conversion as cnv
 
 class OptoForceStatusBits(ctypes.LittleEndianStructure):
@@ -25,7 +26,6 @@ class OptoForceStatus(ctypes.Union):
 			("all", ctypes.c_uint16)
 			]
 	_anonymous_ = ("bits",)
-
 
 	class DaqErrorType:
 		NO_ERROR = 0
@@ -72,6 +72,78 @@ class OptoForceDataPacket31:
 
 	def to_string(self):
 		return "x: {}, y: {}, z: {}".format(self.fx, self.fy, self.fz)
+
+
+class OptoForceConfigurationPacket:
+
+	class SampleFreq:
+		STOP = 0
+		Hz_1000 = 1
+		Hz_333 = 3
+		Hz_100 = 10 # default
+		Hz_30 = 33
+		Hz_10 = 100
+
+	class FilterFreq:
+		NO_FILTER = 0
+		Hz_500 = 1
+		Hz_150 = 2
+		Hz_50 = 3
+		Hz_15 = 4 # default
+		Hz_5 = 5
+		Hz_1_5 = 6 # 1.5 Hz
+
+	class SetZero:
+		ZERO = 255
+		UNZERO = 0
+
+	def __init__(self):
+		self._header = b"\xAA\x00\x32\x03"
+		self._speed = OptoForceConfigurationPacket.SampleFreq.Hz_100
+		self._filter = OptoForceConfigurationPacket.FilterFreq.Hz_15
+		self._zero = OptoForceConfigurationPacket.SetZero.UNZERO
+
+	def set_sample_frequency(self, sample_freq_code):
+		self._speed = sample_freq_code
+
+	def set_filter_frequency(self, filter_freq_code):
+		self._filter = filter_freq_code
+
+	def zero(self):
+		self._zero = OptoForceConfigurationPacket.SetZero.ZERO
+
+	def unzero(self):
+		self._zero = OptoForceConfigurationPacket.SetZero.UNZERO
+
+	def calc_checksum(self):
+		return 170 + 0 + 50 + 3 + self._speed + self._filter + self._zero
+
+	def get_can_bytes(self):
+		data = [0 for i in range(9)]
+		data[0:4] = self._header
+		data[4] = self._speed
+		data[5] = self._filter
+		data[6] = self._zero
+		data[7:9] = cnv.uint16_to_bytes(self.calc_checksum())
+
+		return (bytearray(data[0:8]), bytearray(data[8]))
+
+	def send_via_can(self, bus, arbitration_id=0x101):
+		data = self.get_can_bytes()
+		msg1 = can.Message(
+				arbitration_id = arbitration_id,
+				data = data[0],
+				extended_id=False)
+		msg2 = can.Message(
+				arbitration_id = arbitration_id,
+				data = data[1],
+				extended_id=False)
+
+		try:
+			bus.send(msg1)
+			bus.send(msg2)
+		except can.CanError:
+			print("OptoForce Config Message NOT sent")
 
 
 class OptoForcePacketReceiver:

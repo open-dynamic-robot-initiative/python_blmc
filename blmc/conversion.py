@@ -13,6 +13,10 @@ def bytes_to_uint16(data):
 	return struct.unpack("H", data[::-1])[0]
 
 
+def uint16_to_bytes(value):
+	return struct.pack("H", value)[::-1]
+
+
 def bytes_to_sint16(data):
 	# "h" = signed short (2 bytes)
 	# Note: bytes in data are in reversed order, so use data[::-1]
