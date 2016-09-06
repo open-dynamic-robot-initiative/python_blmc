@@ -115,7 +115,6 @@ if __name__ == "__main__":
 	Kd = float(sys.argv[4])
 
 	of_packet_receiver = OptoForcePacketReceiver()
-	opto_zero_offset = 0
 	optofullscale = 1000.0
 	optopos = 0
 
@@ -136,6 +135,13 @@ if __name__ == "__main__":
 	print("Goal position: {}".format(goal_pos))
 	vctrl1 = PositionController(Kp, Ki, Kd)
 	vctrl2 = PositionController(Kp, Ki, Kd)
+
+	print("Initialize OptoForce...")
+	ofconf = OptoForceConfig()
+	ofconf.zero()
+	#ofconf.set_sample_frequency(
+	#		OptoForceConfig.SampleFreq.Hz_1000)
+	ofconf.send_via_can(bus, ArbitrationIds.optoforce_recv)
 
 	print("Enable system...")
 	send_msg(bus, msg_ensable_system)
@@ -164,13 +170,11 @@ if __name__ == "__main__":
 		send_mtr_current(bus, vctrl1.iqref, vctrl2.iqref)
 
 	def on_optoforce_msg(data):
-		global opto_zero_offset, optopos
+		global optopos
 
 		ofpkt = of_packet_receiver.receive_frame(data)
 		if ofpkt is not None:
-			if (opto_zero_offset == 0):
-				opto_zero_offset = ofpkt.fz
-			optopos = float(max(0, ofpkt.fz - opto_zero_offset)) / optofullscale * goal_pos
+			optopos = float(max(0, ofpkt.fz)) / optofullscale * goal_pos
 
 	msg_handler = MessageHandler()
 	msg_handler.set_id_handler(ArbitrationIds.status, mtr_data.set_status)

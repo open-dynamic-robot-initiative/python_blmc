@@ -113,7 +113,6 @@ if __name__ == "__main__":
 	Ki = float(sys.argv[3])
 
 	of_packet_receiver = OptoForcePacketReceiver()
-	opto_zero_offset = 0
 	optofullscale = 1000.0
 	optospeed = 0
 
@@ -133,6 +132,13 @@ if __name__ == "__main__":
 			send_msg(bus, msg_disable_motor2)
 			sys.exit(0)
 	signal.signal(signal.SIGINT, sigint_handler)
+
+	print("Initialize OptoForce...")
+	ofconf = OptoForceConfig()
+	ofconf.zero()
+	#ofconf.set_sample_frequency(
+	#		OptoForceConfig.SampleFreq.Hz_1000)
+	ofconf.send_via_can(bus, ArbitrationIds.optoforce_recv)
 
 	print("Enable system...")
 	send_msg(bus, msg_ensable_system)
@@ -169,13 +175,11 @@ if __name__ == "__main__":
 		send_mtr_current(bus, vctrl1.iqref, vctrl2.iqref)
 
 	def on_optoforce_msg(data):
-		global opto_zero_offset, optospeed
+		global optospeed
 
 		ofpkt = of_packet_receiver.receive_frame(data)
 		if ofpkt is not None:
-			if (opto_zero_offset == 0):
-				opto_zero_offset = ofpkt.fz
-			optospeed = float(max(0, ofpkt.fz - opto_zero_offset)) / optofullscale * goal_speed
+			optospeed = float(max(0, ofpkt.fz)) / optofullscale * goal_speed
 
 	msg_handler = MessageHandler()
 	msg_handler.set_id_handler(ArbitrationIds.status, mtr_data.set_status)

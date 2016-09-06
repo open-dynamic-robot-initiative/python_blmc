@@ -61,7 +61,7 @@ class OptoForceDataPacket31:
 		checksum = cnv.bytes_to_uint16(data[14:16])
 		# checksum = sum of all preceding bytes, including header
 		if checksum != sum(data[:14]):
-			raise ValueError("Invalid checksum")
+			raise ValueError("Invalid checksum. Packet: {}".format([hex(x) for x in data]))
 
 		self.sample_counter = cnv.bytes_to_uint16(data[4:6])
 		self.status = OptoForceStatus()
@@ -74,7 +74,7 @@ class OptoForceDataPacket31:
 		return "x: {}, y: {}, z: {}".format(self.fx, self.fy, self.fz)
 
 
-class OptoForceConfigurationPacket:
+class OptoForceConfig:
 
 	class SampleFreq:
 		STOP = 0
@@ -99,9 +99,9 @@ class OptoForceConfigurationPacket:
 
 	def __init__(self):
 		self._header = b"\xAA\x00\x32\x03"
-		self._speed = OptoForceConfigurationPacket.SampleFreq.Hz_100
-		self._filter = OptoForceConfigurationPacket.FilterFreq.Hz_15
-		self._zero = OptoForceConfigurationPacket.SetZero.UNZERO
+		self._speed = OptoForceConfig.SampleFreq.Hz_100
+		self._filter = OptoForceConfig.FilterFreq.Hz_15
+		self._zero = OptoForceConfig.SetZero.UNZERO
 
 	def set_sample_frequency(self, sample_freq_code):
 		self._speed = sample_freq_code
@@ -110,10 +110,10 @@ class OptoForceConfigurationPacket:
 		self._filter = filter_freq_code
 
 	def zero(self):
-		self._zero = OptoForceConfigurationPacket.SetZero.ZERO
+		self._zero = OptoForceConfig.SetZero.ZERO
 
 	def unzero(self):
-		self._zero = OptoForceConfigurationPacket.SetZero.UNZERO
+		self._zero = OptoForceConfig.SetZero.UNZERO
 
 	def calc_checksum(self):
 		return 170 + 0 + 50 + 3 + self._speed + self._filter + self._zero
