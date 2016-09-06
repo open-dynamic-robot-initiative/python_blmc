@@ -117,11 +117,12 @@ if __name__ == "__main__":
 	Ki2 = float(sys.argv[6])
 	Kd2 = float(sys.argv[7])
 
-	of_packet_receiver = OptoForcePacketReceiver()
-	optofullscale = 1000.0
-	optopos = 0
+	#of_packet_receiver = OptoForcePacketReceiver()
+	#optofullscale = 1000.0
+	#optopos = 0
 
 	mtr_data = MotorData()
+	adc = AdcResult()
 	bus = can.interface.Bus(bitrate=BITRATE)
 
 	# setup sigint handler to disable motor on CTRL+C
@@ -142,12 +143,12 @@ if __name__ == "__main__":
 	vctrl1 = PositionController(Kp1, Ki1, Kd1)
 	vctrl2 = PositionController(Kp2, Ki2, Kd2)
 
-	print("Initialize OptoForce...")
-	ofconf = OptoForceConfig()
-	ofconf.zero()
-	#ofconf.set_sample_frequency(
-	#		OptoForceConfig.SampleFreq.Hz_1000)
-	ofconf.send_via_can(bus, ArbitrationIds.optoforce_recv)
+	#print("Initialize OptoForce...")
+	#ofconf = OptoForceConfig()
+	#ofconf.zero()
+	##ofconf.set_sample_frequency(
+	##		OptoForceConfig.SampleFreq.Hz_1000)
+	#ofconf.send_via_can(bus, ArbitrationIds.optoforce_recv)
 
 	print("Enable system...")
 	send_msg(bus, msg_ensable_system)
@@ -166,13 +167,14 @@ if __name__ == "__main__":
 
 		if mtr_data.status.mtr1_ready:
 			vctrl1.update_data(mtr_data.mtr1)
-			vctrl1.run(optopos)
+			vctrl1.run(goal_pos * adc.a)
 
 		if mtr_data.status.mtr2_ready:
 			vctrl2.update_data(mtr_data.mtr2)
-			vctrl2.run(optopos)
+			vctrl2.run(goal_pos * adc.b)
 
-		#print(mtr_data.to_string())
+		print(mtr_data.to_string())
+		print(adc.to_string())
 		send_mtr_current(bus, vctrl1.iqref, vctrl2.iqref)
 
 	def on_optoforce_msg(data):
@@ -187,8 +189,8 @@ if __name__ == "__main__":
 	msg_handler.set_id_handler(ArbitrationIds.current, mtr_data.set_current)
 	msg_handler.set_id_handler(ArbitrationIds.position, on_position_msg)
 	msg_handler.set_id_handler(ArbitrationIds.velocity, mtr_data.set_velocity)
-	#msg_handler.set_id_handler(0x050, mtr_data.set_status)
-	msg_handler.set_id_handler(ArbitrationIds.optoforce_trans, on_optoforce_msg)
+	msg_handler.set_id_handler(ArbitrationIds.adc6, adc.set_values)
+	#msg_handler.set_id_handler(ArbitrationIds.optoforce_trans, on_optoforce_msg)
 
 
 	# wait for messages and update data
