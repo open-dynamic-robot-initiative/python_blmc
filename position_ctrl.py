@@ -104,15 +104,18 @@ def handle_optoforce_package(data):
 
 
 if __name__ == "__main__":
-	if len(sys.argv) != 5:
-		print("Usage: {} goal_pos Kp Ki Kd".format(sys.argv[0]))
+	if len(sys.argv) != 8:
+		print("Usage: {} goal_pos Kp1 Ki1 Kd1 Kp2 Ki2 Kd2".format(sys.argv[0]))
 		sys.exit(1)
 
 
 	goal_pos = float(sys.argv[1])
-	Kp = float(sys.argv[2])
-	Ki = float(sys.argv[3])
-	Kd = float(sys.argv[4])
+	Kp1 = float(sys.argv[2])
+	Ki1 = float(sys.argv[3])
+	Kd1 = float(sys.argv[4])
+	Kp2 = float(sys.argv[5])
+	Ki2 = float(sys.argv[6])
+	Kd2 = float(sys.argv[7])
 
 	of_packet_receiver = OptoForcePacketReceiver()
 	optofullscale = 1000.0
@@ -131,10 +134,13 @@ if __name__ == "__main__":
 	signal.signal(signal.SIGINT, sigint_handler)
 
 
-	print("Setup controller with Kp = {}, Ki = {}".format(Kp, Ki))
+	print("Setup controller 1 with Kp = {}, Ki = {}, Kd = {}".format(
+		Kp1, Ki1, Kd1))
+	print("Setup controller 2 with Kp = {}, Ki = {}, Kd = {}".format(
+		Kp2, Ki2, Kd2))
 	print("Goal position: {}".format(goal_pos))
-	vctrl1 = PositionController(Kp, Ki, Kd)
-	vctrl2 = PositionController(Kp, Ki, Kd)
+	vctrl1 = PositionController(Kp1, Ki1, Kd1)
+	vctrl2 = PositionController(Kp2, Ki2, Kd2)
 
 	print("Initialize OptoForce...")
 	ofconf = OptoForceConfig()
@@ -146,10 +152,10 @@ if __name__ == "__main__":
 	print("Enable system...")
 	send_msg(bus, msg_ensable_system)
 
-	print("Enable motor...")
+	print("Enable motors...")
 	send_mtr_current(bus, 0, 0) # start with zero
 	send_msg(bus, msg_enable_motor1)
-	#send_msg(bus, msg_enable_motor2)
+	send_msg(bus, msg_enable_motor2)
 
 	# wait a moment for the initial messages to be handled
 	time.sleep(0.2)
