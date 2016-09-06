@@ -107,3 +107,15 @@ class Status:
 		str_mtr2 += "R" if self.mtr2_ready else "A"
 
 		return "{} | {} | {}".format(str_sys, str_mtr1, str_mtr2)
+
+
+class AdcResult:
+	a = 0
+	b = 0
+
+	def set_values(self, data):
+		self.a = q_bytes_to_value(MDL(data))
+		self.b = q_bytes_to_value(MDH(data))
+
+	def to_string(self):
+		return "ADC: {:.3f} / {:.3f}".format(self.a, self.b)
