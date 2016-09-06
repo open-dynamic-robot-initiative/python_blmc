@@ -112,10 +112,16 @@ class Status:
 class AdcResult:
 	a = 0
 	b = 0
+	filter_val = 0.002
 
 	def set_values(self, data):
-		self.a = q_bytes_to_value(MDL(data))
-		self.b = q_bytes_to_value(MDH(data))
+		new_a = q_bytes_to_value(MDL(data))
+		new_b = q_bytes_to_value(MDH(data))
+
+		if abs(self.a - new_a) > self.filter_val:
+			self.a = new_a
+		if abs(self.b - new_b) > self.filter_val:
+			self.b = new_b
 
 	def to_string(self):
 		return "ADC: {:.3f} / {:.3f}".format(self.a, self.b)
