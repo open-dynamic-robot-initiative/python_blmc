@@ -165,6 +165,9 @@ if __name__ == "__main__":
 	def on_position_msg(data):
 		mtr_data.set_position(data)
 
+		print(mtr_data.to_string())
+		print(adc.to_string())
+
 		if mtr_data.status.mtr1_ready:
 			vctrl1.update_data(mtr_data.mtr1)
 			vctrl1.run(goal_pos * adc.a)
@@ -173,9 +176,8 @@ if __name__ == "__main__":
 			vctrl2.update_data(mtr_data.mtr2)
 			vctrl2.run(goal_pos * adc.b)
 
-		print(mtr_data.to_string())
-		print(adc.to_string())
 		send_mtr_current(bus, vctrl1.iqref, vctrl2.iqref)
+		print()
 
 	def on_optoforce_msg(data):
 		global optopos
