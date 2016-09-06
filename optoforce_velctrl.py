@@ -7,6 +7,7 @@ import time
 import can
 import signal
 import sys
+import traceback
 from blmc.optoforce import *
 from blmc.pid import PID
 from blmc.motor_data import *
@@ -48,11 +49,10 @@ def send_msg(bus, msg):
 		print("Message NOT sent")
 
 
-
 class VelocityController:
 
-	def __init__(self, Kp, Ki):
-		self._mtr1 = MotorData()
+	def __init__(self, Kp, Ki, Kd):
+		self._mtr = MotorData()
 		self._status = Status()
 		self._pid = PID()
 		self._maxval = 9.0
@@ -61,22 +61,25 @@ class VelocityController:
 
 		self._pid.SetKp(Kp)
 		self._pid.SetKi(Ki)
+		self._pid.SetKd(Kd)
+
+	def update_data(self, mtr):
+		self._mtr = mtr
 
 	def run(self, refspeed):
 		period = time.time() - self._last_run
 		self._last_run = time.time()
-		if self._status.mtr1_enabled and self._status.mtr1_ready:
-			error = refspeed - self._mtr1.velocity
-			u = self._pid.GenOut(error)
-			self.iqref = u
+		error = refspeed - self._mtr.velocity
+		u = self._pid.GenOut(error)
+		self.iqref = u
 
-			# clamp to allowed range
-			self.iqref = min(self.iqref, self._maxval)
-			self.iqref = max(self.iqref, -self._maxval)
+		# clamp to allowed range
+		self.iqref = min(self.iqref, self._maxval)
+		self.iqref = max(self.iqref, -self._maxval)
 
-			print("RefSpeed = {},\t\tSpeed = {:.4f}\t\tIqRef = {:.4f}\t\tdt [ms] = {:.0f}".format(
-				refspeed, self._mtr1.velocity, self.iqref, period*1000.0))
-			#self.send_mtr1_current(self.iqref)
+		print("RefSpeed = {},\t\tSpeed = {:.4f}\t\tIqRef = {:.4f}\t\tdt [ms] = {:.0f}".format(
+			refspeed, self._mtr.velocity, self.iqref, period*1000.0))
+		#self.send_mtr1_current(self.iqref)
 
 
 def send_mtr_current(bus, mtr1_iqref, mtr2_iqref):
@@ -109,17 +112,18 @@ if __name__ == "__main__":
 	Kp = float(sys.argv[2])
 	Ki = float(sys.argv[3])
 
-	optodata = None
+	of_packet_receiver = OptoForcePacketReceiver()
 	opto_zero_offset = 0
 	optofullscale = 1000.0
 	optospeed = 0
 
+	mtr_data = MotorData()
 	bus = can.interface.Bus(bitrate=BITRATE)
 
 	print("Setup controller with Kp = {}, Ki = {}".format(Kp, Ki))
 	print("Goal speed: {}".format(goal_speed))
-	vctrl1 = VelocityController(Kp, Ki)
-	vctrl2 = VelocityController(Kp, Ki)
+	vctrl1 = VelocityController(Kp, Ki, 0)
+	vctrl2 = VelocityController(Kp, Ki, 0)
 
 	# setup sigint handler to disable motor on CTRL+C
 	def sigint_handler(signal, frame):
@@ -133,69 +137,60 @@ if __name__ == "__main__":
 	print("Enable system...")
 	send_msg(bus, msg_ensable_system)
 
-	print("Enable motor...")
+	print("Enable motors...")
 	send_mtr_current(bus, 0, 0) # start with zero
 	send_msg(bus, msg_enable_motor1)
 	send_msg(bus, msg_enable_motor2)
 
 	# wait a second for the initial messages to be handled
-	time.sleep(1)
+	time.sleep(0.2)
+
+	def on_velocity_msg(data):
+		mtr_data.set_velocity(data)
+		max_speed = goal_speed * 3
+
+		# emergency break
+		if ((mtr_data.mtr1.velocity > max_speed)
+				or (mtr_data.mtr2.velocity > max_speed)):
+			send_msg(bus, msg_disable_system)
+			print(mtr_data.to_string())
+			print("Motor too fast! EMERGENCY BREAK!")
+			sys.exit(0)
+
+		if mtr_data.status.mtr1_ready:
+			vctrl1.update_data(mtr_data.mtr1)
+			vctrl1.run(optospeed)
+
+		if mtr_data.status.mtr2_ready:
+			vctrl2.update_data(mtr_data.mtr2)
+			vctrl2.run(optospeed)
+
+		print(mtr_data.to_string())
+		send_mtr_current(bus, vctrl1.iqref, vctrl2.iqref)
+
+	def on_optoforce_msg(data):
+		global opto_zero_offset, optospeed
+
+		ofpkt = of_packet_receiver.receive_frame(data)
+		if ofpkt is not None:
+			if (opto_zero_offset == 0):
+				opto_zero_offset = ofpkt.fz
+			optospeed = float(max(0, ofpkt.fz - opto_zero_offset)) / optofullscale * goal_speed
+
+	msg_handler = MessageHandler()
+	msg_handler.set_id_handler(ArbitrationIds.status, mtr_data.set_status)
+	msg_handler.set_id_handler(ArbitrationIds.current, mtr_data.set_current)
+	msg_handler.set_id_handler(ArbitrationIds.position, mtr_data.set_position)
+	msg_handler.set_id_handler(ArbitrationIds.velocity, on_velocity_msg)
+	#msg_handler.set_id_handler(0x050, mtr_data.set_status)
+	msg_handler.set_id_handler(ArbitrationIds.optoforce_trans, on_optoforce_msg)
 
 	# wait for messages and update data
 	for msg in bus:
-		arb_id = msg.arbitration_id
-		if arb_id == 0x010:
-			vctrl1._status.set_status(msg.data)
-			vctrl2._status.set_status(msg.data)
-			if not vctrl1._status.mtr1_ready:
-				print("Waiting for motor 1...")
-			if not vctrl2._status.mtr2_ready:
-				print("Waiting for motor 2...")
-		elif arb_id == 0x021:
-			vctrl1._mtr1.set_current_pos(msg.data)
-		elif arb_id == 0x022:
-			vctrl2._mtr1.set_current_pos(msg.data)
-		elif arb_id == 0x031:
-			vctrl1._mtr1.set_velocity(msg.data)
-
-			# emergency break
-			if vctrl1._mtr1.velocity > goal_speed * 3:
-				send_msg(bus, msg_disable_system)
-				print("Motor 1 too fast! EMERGENCY BREAK!")
-				break
-
-			# trigger vel ctrl everytime we get a new velocity
-			vctrl1.run(optospeed)
-		elif arb_id == 0x032:
-			vctrl2._mtr1.set_velocity(msg.data)
-
-			# emergency break
-			if vctrl2._mtr1.velocity > goal_speed * 3:
-				send_msg(bus, msg_disable_system)
-				print("Motor 2 too fast! EMERGENCY BREAK!")
-				break
-
-			# trigger vel ctrl everytime we get a new velocity
-			vctrl2.run(optospeed)
-
-			# 0x032 should arrive just after 0x031, so we use this place to
-			# send the control outputs to the motor.
-			send_mtr_current(bus, vctrl1.iqref, vctrl2.iqref)
-
-		elif arb_id == 0x100:
-			#print([hex(x) for x in msg.data])
-			
-			# check for header 0xAA07080A
-			if msg.data[0:4] == b"\xAA\x07\x08\x0A": #[0xAA, 0x07, 0x08, 0x0A]:
-				optodata = msg.data
-			elif optodata is not None:
-				optodata += msg.data
-				fz = handle_optoforce_package(optodata)
-				if (opto_zero_offset == 0):
-					opto_zero_offset = fz
-				optospeed = float(max(0, fz - opto_zero_offset)) / optofullscale * goal_speed
-				# clear after data is handled
-				optodata = None
-			else:
-				print("Unexpected package {}".format(
-					[int(x) for x in msg.data]))
+		try:
+			msg_handler.handle_msg(msg.arbitration_id, msg.data)
+		except:
+			print("\n\n=========== ERROR ============")
+			print(traceback.format_exc())
+			send_msg(bus, msg_disable_system)
+			break

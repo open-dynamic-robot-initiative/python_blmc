@@ -74,3 +74,34 @@ class OptoForceDataPacket31:
 		return "x: {}, y: {}, z: {}".format(self.fx, self.fy, self.fz)
 
 
+class OptoForcePacketReceiver:
+
+	def __init__(self):
+		self._data = None
+
+	def receive_frame(self, fdata):
+		# check for header 0xAA07080A
+		if fdata[0:4] == b"\xAA\x07\x08\x0A": #[0xAA, 0x07, 0x08, 0x0A]:
+			self._data = fdata
+			return None
+
+		elif self._data is not None:
+			# if not beginning with header and we already have the first part
+			self._data += fdata
+
+			# decode data
+			pkt = OptoForceDataPacket31()
+			pkt.set_packet_bytes(self._data)
+
+			# clear after data is handled
+			self._data = None
+
+			return pkt
+
+		else:
+			# if not beginning with header but we dont already have the first
+			# part
+			print("Unexpected package {}".format(
+				[int(x) for x in fdata]))
+			return None
+
