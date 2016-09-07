@@ -16,5 +16,5 @@ board.
 Requirements
 ------------
 
- * python-can
+ * python-can (v 1.5.1 or higher!)
  * numpy
