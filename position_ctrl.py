@@ -127,9 +127,12 @@ if __name__ == "__main__":
 	# wait a moment for the initial messages to be handled
 	time.sleep(0.2)
 
-
 	def on_position_msg(data):
 		mtr_data.set_position(data)
+
+		if ((abs(mtr_data.mtr1.position) > 1.1)
+				or (abs(mtr_data.mtr2.position) > 1.1)):
+			raise RuntimeError("EMERGENCY BREAK")
 
 		print(mtr_data.to_string())
 		print(adc.to_string())
