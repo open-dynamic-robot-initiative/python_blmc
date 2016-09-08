@@ -45,8 +45,8 @@ class PID:
 
     def Initialize(self):
         # initialize delta t variables
-        self.currtm = time.clock()
-        self.prevtm = self.currtm
+        self.currtm = None
+        self.prevtm = None
 
         self.prev_err = 0
 
@@ -62,6 +62,15 @@ class PID:
             (the error parameter).
         """
         self.currtm = time.clock()               # get t
+
+        # at first call, we don't have a valid prevtime and therefore cannot
+        # comput a valid dt. Just set prev_err and prevtm and return with 0
+        # (i.e. don't do something in the first step).
+        if self.prevtm is None:
+            self.prev_err = error
+            self.prevtm = self.currtm
+            return 0
+
         dt = self.currtm - self.prevtm          # get delta t
         de = error - self.prev_err              # get delta error
 
