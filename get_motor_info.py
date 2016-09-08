@@ -27,7 +27,7 @@ if __name__ == "__main__":
 
 	# wait for messages and update data
 	for msg in bus:
-		canhndlr.handle_msg(msg.arbitration_id, msg.data)
+		canhndlr.handle_msg(msg)
 
 		t = time.time()
 		if last_print < t - 1:
