@@ -126,14 +126,17 @@ if __name__ == "__main__":
                 t = t - start_up_offset
 
                 (posref1, posref2) = get_position_reference(t)
-                posref1 += pos_offset[0]
-                posref2 += pos_offset[1]
+            else:
+                posref1 = 0
+                posref2 = 0
 
+            posref1 += pos_offset[0]
+            posref2 += pos_offset[1]
 
-                pos_ctrl1.update_data(mtr_data.mtr1)
-                pos_ctrl1.run(posref1)
-                pos_ctrl2.update_data(mtr_data.mtr2)
-                pos_ctrl2.run(posref2)
+            pos_ctrl1.update_data(mtr_data.mtr1)
+            pos_ctrl1.run(posref1)
+            pos_ctrl2.update_data(mtr_data.mtr2)
+            pos_ctrl2.run(posref2)
 
             send_mtr_current(bus, pos_ctrl1.iqref, pos_ctrl2.iqref)
         else:
