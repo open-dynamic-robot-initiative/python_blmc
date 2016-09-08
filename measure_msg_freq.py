@@ -37,7 +37,8 @@ if __name__ == "__main__":
 		#canhndlr.handle_msg(msg.arbitration_id, msg.data)
 		t = time.clock()
 		if msg.arbitration_id == arb_id:
-			stemps.append(t)
+			#stemps.append(t)
+			stemps.append(msg.timestamp)
 
 		if last_print < t - 1:
 			if len(stemps) == 0:
@@ -49,7 +50,8 @@ if __name__ == "__main__":
 			dts = (astemp[1:] - astemp[:-1]) * 1000
 			dts_mean = dts.mean()
 			print("ID: {} | Avg. dt [ms]: {:.3f} | Avg. freq [Hz]: {:.1f} | dt std dev"
-					" [ms]: {:.3f}"
-					.format(arb_id, dts_mean, (1.0/dts_mean*1000), dts.std()))
+					" [ms]: {:.3f} | min/max [ms]: {:.3f}/{:.3f}"
+					.format(arb_id, dts_mean, (1.0/dts_mean*1000), dts.std(),
+						dts.min(), dts.max()))
 			# clear values
 			stemps = []
