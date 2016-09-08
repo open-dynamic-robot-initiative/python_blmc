@@ -12,85 +12,10 @@ from blmc.optoforce import *
 from blmc.pid import PID
 from blmc.motor_data import *
 from blmc.conversion import *
+from blmc.can_helper import *
+from blmc.controllers import VelocityController
 
 BITRATE = 1e6
-
-msg_enable_motor1 = can.Message(arbitration_id=0x000,
-		data=[0, 0, 0, 1, 0, 0, 0, 2],
-		extended_id=False)
-
-msg_disable_motor1 = can.Message(arbitration_id=0x000,
-		data=[0, 0, 0, 0, 0, 0, 0, 2],
-		extended_id=False)
-
-msg_enable_motor2 = can.Message(arbitration_id=0x000,
-		data=[0, 0, 0, 1, 0, 0, 0, 3],
-		extended_id=False)
-
-msg_disable_motor2 = can.Message(arbitration_id=0x000,
-		data=[0, 0, 0, 0, 0, 0, 0, 3],
-		extended_id=False)
-
-msg_ensable_system = can.Message(arbitration_id=0x000,
-		data=[0, 0, 0, 1, 0, 0, 0, 1],
-		extended_id=False)
-
-msg_disable_system = can.Message(arbitration_id=0x000,
-		data=[0, 0, 0, 0, 0, 0, 0, 1],
-		extended_id=False)
-
-
-def send_msg(bus, msg):
-	"""Send a single message on the CAN bus."""
-	try:
-		bus.send(msg)
-		#print("Message sent on {}".format(bus.channel_info))
-	except can.CanError:
-		print("Message NOT sent")
-
-
-class VelocityController:
-
-	def __init__(self, Kp, Ki, Kd):
-		self._mtr = MotorData()
-		self._status = Status()
-		self._pid = PID()
-		self._maxval = 9.0
-		self.iqref = 0
-		self._last_run = 0
-
-		self._pid.SetKp(Kp)
-		self._pid.SetKi(Ki)
-		self._pid.SetKd(Kd)
-
-	def update_data(self, mtr):
-		self._mtr = mtr
-
-	def run(self, refspeed):
-		period = time.time() - self._last_run
-		self._last_run = time.time()
-		error = refspeed - self._mtr.velocity
-		u = self._pid.GenOut(error)
-		self.iqref = u
-
-		# clamp to allowed range
-		self.iqref = min(self.iqref, self._maxval)
-		self.iqref = max(self.iqref, -self._maxval)
-
-		print("RefSpeed = {},\t\tSpeed = {:.4f}\t\tIqRef = {:.4f}\t\tdt [ms] = {:.0f}".format(
-			refspeed, self._mtr.velocity, self.iqref, period*1000.0))
-		#self.send_mtr1_current(self.iqref)
-
-
-def send_mtr_current(bus, mtr1_iqref, mtr2_iqref):
-	data = [0, 0, 0, 0, 0, 0, 0, 0]
-	data[0:4] = value_to_q_bytes(mtr1_iqref)
-	data[4:8] = value_to_q_bytes(mtr2_iqref)
-
-	msg = can.Message(arbitration_id=0x005,
-			data=data,
-			extended_id=False)
-	send_msg(bus, msg)
 
 
 def handle_optoforce_package(data):
@@ -151,13 +76,13 @@ if __name__ == "__main__":
 	# wait a second for the initial messages to be handled
 	time.sleep(0.2)
 
-	def on_velocity_msg(data):
-		mtr_data.set_velocity(data)
+	def on_velocity_msg(msg):
+		mtr_data.set_velocity(msg)
 		max_speed = goal_speed * 3
 
 		# emergency break
-		if ((mtr_data.mtr1.velocity > max_speed)
-				or (mtr_data.mtr2.velocity > max_speed)):
+		if ((mtr_data.mtr1.velocity.value > max_speed)
+				or (mtr_data.mtr2.velocity.value > max_speed)):
 			send_msg(bus, msg_disable_system)
 			print(mtr_data.to_string())
 			print("Motor too fast! EMERGENCY BREAK!")
@@ -174,10 +99,10 @@ if __name__ == "__main__":
 		print(mtr_data.to_string())
 		send_mtr_current(bus, vctrl1.iqref, vctrl2.iqref)
 
-	def on_optoforce_msg(data):
+	def on_optoforce_msg(msg):
 		global optospeed
 
-		ofpkt = of_packet_receiver.receive_frame(data)
+		ofpkt = of_packet_receiver.receive_frame(msg.data)
 		if ofpkt is not None:
 			optospeed = float(max(0, ofpkt.fz)) / optofullscale * goal_speed
 
@@ -192,7 +117,7 @@ if __name__ == "__main__":
 	# wait for messages and update data
 	for msg in bus:
 		try:
-			msg_handler.handle_msg(msg.arbitration_id, msg.data)
+			msg_handler.handle_msg(msg)
 		except:
 			print("\n\n=========== ERROR ============")
 			print(traceback.format_exc())

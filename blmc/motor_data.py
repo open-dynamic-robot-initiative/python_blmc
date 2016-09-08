@@ -22,27 +22,41 @@ class MessageHandler:
 	def set_id_handler(self, arbitration_id, func):
 		self._id_fnx_map[arbitration_id] = func
 
-	def handle_msg(self, arbitration_id, data):
-		if arbitration_id in self._id_fnx_map:
-			return self._id_fnx_map[arbitration_id](data)
+	def handle_msg(self, msg):
+		if msg.arbitration_id in self._id_fnx_map:
+			return self._id_fnx_map[msg.arbitration_id](msg)
 		else:
 			return None
 
+
+class StampedValue:
+	def __init__(self, value=0, timestamp=0):
+		self.value = value
+		self.timestamp = timestamp
+
+
 class MotorDataStruct:
-	current = 0
-	position = 0
-	velocity = 0
+	current = StampedValue()
+	position = StampedValue()
+	velocity = StampedValue()
 
 	def to_string(self):
 		return "Iq: {:.3f},  Pos: {:.3f},  Speed: {:.3f}".format(
-				self.current, self.position, self.velocity)
+				self.current.value, self.position.value, self.velocity.value)
 
 
 def MDL(data):
 	return data[0:4]
 
+
 def MDH(data):
 	return data[4:8]
+
+
+def _conv_stamp_2val_q_msg(msg):
+	return (StampedValue(q_bytes_to_value(MDL(msg.data)), msg.timestamp),
+			StampedValue(q_bytes_to_value(MDH(msg.data)), msg.timestamp))
+
 
 class MotorData:
 	def __init__(self):
@@ -50,20 +64,17 @@ class MotorData:
 		self.mtr2 = MotorDataStruct()
 		self.status = Status()
 
-	def set_status(self, data):
-		self.status.set_status(data)
+	def set_status(self, msg):
+		self.status.set_status(msg)
 
-	def set_current(self, data):
-		self.mtr1.current = q_bytes_to_value(MDL(data))
-		self.mtr2.current = q_bytes_to_value(MDH(data))
+	def set_current(self, msg):
+		(self.mtr1.current, self.mtr2.current) = _conv_stamp_2val_q_msg(msg)
 
-	def set_position(self, data):
-		self.mtr1.position = q_bytes_to_value(MDL(data))
-		self.mtr2.position = q_bytes_to_value(MDH(data))
+	def set_position(self, msg):
+		(self.mtr1.position, self.mtr2.position) = _conv_stamp_2val_q_msg(msg)
 
-	def set_velocity(self, data):
-		self.mtr1.velocity = q_bytes_to_value(MDL(data))
-		self.mtr2.velocity = q_bytes_to_value(MDH(data))
+	def set_velocity(self, msg):
+		(self.mtr1.velocity, self.mtr2.velocity) = _conv_stamp_2val_q_msg(msg)
 
 	def to_string(self):
 		return "{} | MTR1: {}\t | MTR2: {}".format(
@@ -81,9 +92,11 @@ class Status:
 	mtr1_overheat = 0
 	mtr2_overheat = 0
 	system_error = 0
+	timestamp = 0
 
-	def set_status(self, data):
-		status_code = data[0]
+	def set_status(self, msg):
+		self.timestamp = msg.timestamp
+		status_code = msg.data[0]
 		self.system_enabled = status_code & 1
 		self.mtr1_enabled = status_code & (1 << 1)
 		self.mtr1_ready = status_code & (1 << 2)
@@ -112,12 +125,14 @@ class Status:
 class AdcResult:
 	a = 0
 	b = 0
+	timestamp = 0
 	filter_val = 0.002
 
-	def set_values(self, data):
-		new_a = q_bytes_to_value(MDL(data))
-		new_b = q_bytes_to_value(MDH(data))
+	def set_values(self, msg):
+		new_a = q_bytes_to_value(MDL(msg.data))
+		new_b = q_bytes_to_value(MDH(msg.data))
 
+		self.timestamp = msg.timestamp
 		if abs(self.a - new_a) > self.filter_val:
 			self.a = new_a
 		if abs(self.b - new_b) > self.filter_val:

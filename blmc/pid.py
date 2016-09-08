@@ -56,12 +56,15 @@ class PID:
         self.Cd = 0
 
 
-    def GenOut(self, error):
+    def GenOut(self, error, time=None):
         """ Performs a PID computation and returns a control value based on
             the elapsed time (dt) and the error signal from a summing junction
             (the error parameter).
         """
-        self.currtm = time.clock()               # get t
+        if time is None:
+            self.currtm = time.clock()               # get t
+        else:
+            self.currtm = time
 
         # at first call, we don't have a valid prevtime and therefore cannot
         # comput a valid dt. Just set prev_err and prevtm and return with 0

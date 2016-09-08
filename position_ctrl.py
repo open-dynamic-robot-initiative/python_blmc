@@ -12,52 +12,9 @@ from blmc.optoforce import *
 from blmc.motor_data import *
 from blmc.conversion import *
 from blmc.controllers import PositionController
+from blmc.can_helper import *
 
 BITRATE = 1e6
-
-msg_enable_motor1 = can.Message(arbitration_id=0x000,
-		data=[0, 0, 0, 1, 0, 0, 0, 2],
-		extended_id=False)
-
-msg_disable_motor1 = can.Message(arbitration_id=0x000,
-		data=[0, 0, 0, 0, 0, 0, 0, 2],
-		extended_id=False)
-
-msg_enable_motor2 = can.Message(arbitration_id=0x000,
-		data=[0, 0, 0, 1, 0, 0, 0, 3],
-		extended_id=False)
-
-msg_disable_motor2 = can.Message(arbitration_id=0x000,
-		data=[0, 0, 0, 0, 0, 0, 0, 3],
-		extended_id=False)
-
-msg_ensable_system = can.Message(arbitration_id=0x000,
-		data=[0, 0, 0, 1, 0, 0, 0, 1],
-		extended_id=False)
-
-msg_disable_system = can.Message(arbitration_id=0x000,
-		data=[0, 0, 0, 0, 0, 0, 0, 1],
-		extended_id=False)
-
-
-def send_msg(bus, msg):
-	"""Send a single message on the CAN bus."""
-	try:
-		bus.send(msg)
-		#print("Message sent on {}".format(bus.channel_info))
-	except can.CanError:
-		print("Message NOT sent")
-
-
-def send_mtr_current(bus, mtr1_iqref, mtr2_iqref):
-	data = [0, 0, 0, 0, 0, 0, 0, 0]
-	data[0:4] = value_to_q_bytes(mtr1_iqref)
-	data[4:8] = value_to_q_bytes(mtr2_iqref)
-
-	msg = can.Message(arbitration_id=0x005,
-			data=data,
-			extended_id=False)
-	send_msg(bus, msg)
 
 
 def handle_optoforce_package(data):
@@ -83,10 +40,6 @@ if __name__ == "__main__":
 	Ki2 = float(sys.argv[6])
 	Kd2 = float(sys.argv[7])
 
-	#of_packet_receiver = OptoForcePacketReceiver()
-	#optofullscale = 1000.0
-	#optopos = 0
-
 	mtr_data = MotorData()
 	adc = AdcResult()
 	bus = can.interface.Bus(bitrate=BITRATE)
@@ -109,13 +62,6 @@ if __name__ == "__main__":
 	vctrl1 = PositionController(Kp1, Ki1, Kd1)
 	vctrl2 = PositionController(Kp2, Ki2, Kd2)
 
-	#print("Initialize OptoForce...")
-	#ofconf = OptoForceConfig()
-	#ofconf.zero()
-	##ofconf.set_sample_frequency(
-	##		OptoForceConfig.SampleFreq.Hz_1000)
-	#ofconf.send_via_can(bus, ArbitrationIds.optoforce_recv)
-
 	print("Enable system...")
 	send_msg(bus, msg_ensable_system)
 
@@ -127,15 +73,15 @@ if __name__ == "__main__":
 	# wait a moment for the initial messages to be handled
 	time.sleep(0.2)
 
-	def on_position_msg(data):
-		mtr_data.set_position(data)
-
-		if ((abs(mtr_data.mtr1.position) > 1.1)
-				or (abs(mtr_data.mtr2.position) > 1.1)):
-			raise RuntimeError("EMERGENCY BREAK")
+	def on_position_msg(msg):
+		mtr_data.set_position(msg)
 
 		print(mtr_data.to_string())
 		print(adc.to_string())
+
+		if ((abs(mtr_data.mtr1.position.value) > 1.1)
+				or (abs(mtr_data.mtr2.position.value) > 1.1)):
+			raise RuntimeError("EMERGENCY BREAK")
 
 		if mtr_data.status.mtr1_ready:
 			vctrl1.update_data(mtr_data.mtr1)
@@ -148,26 +94,18 @@ if __name__ == "__main__":
 		send_mtr_current(bus, vctrl1.iqref, vctrl2.iqref)
 		print()
 
-	def on_optoforce_msg(data):
-		global optopos
-
-		ofpkt = of_packet_receiver.receive_frame(data)
-		if ofpkt is not None:
-			optopos = float(max(0, ofpkt.fz)) / optofullscale * goal_pos
-
 	msg_handler = MessageHandler()
 	msg_handler.set_id_handler(ArbitrationIds.status, mtr_data.set_status)
 	msg_handler.set_id_handler(ArbitrationIds.current, mtr_data.set_current)
 	msg_handler.set_id_handler(ArbitrationIds.position, on_position_msg)
 	msg_handler.set_id_handler(ArbitrationIds.velocity, mtr_data.set_velocity)
 	msg_handler.set_id_handler(ArbitrationIds.adc6, adc.set_values)
-	#msg_handler.set_id_handler(ArbitrationIds.optoforce_trans, on_optoforce_msg)
 
 
 	# wait for messages and update data
 	for msg in bus:
 		try:
-			msg_handler.handle_msg(msg.arbitration_id, msg.data)
+			msg_handler.handle_msg(msg)
 		except:
 			print("\n\n=========== ERROR ============")
 			print(traceback.format_exc())
