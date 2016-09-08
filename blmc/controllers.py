@@ -10,7 +10,7 @@ class PositionController:
 	def __init__(self, Kp, Ki, Kd):
 		self._mtr = MotorData()
 		self._pid = PID()
-		self._maxval = 3.0
+		self._maxval = 9.0
 		self.iqref = 0
 
 		self._pid.SetKp(Kp)

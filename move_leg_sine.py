@@ -24,9 +24,9 @@ def get_position_reference(t):
     # start both at 0 and run with same frequency (i.e. they always are at zero
     # at the same time)
 
-    range1 = 0.4
-    range2 = 0.8
-    freq = 0.8
+    range1 = 0.3
+    range2 = 0.6
+    freq = 0.7
 
     t_scale = 2.0 * np.pi * freq
     t = t * t_scale
@@ -59,8 +59,8 @@ if __name__ == "__main__":
         Kd2 = float(sys.argv[7])
     else:
         print("Use default controller values")
-        (Kp1, Ki1, Kd1) = (20, 0, 0.12)
-        (Kp2, Ki2, Kd2) = (10, 0, 0.1)
+        (Kp1, Ki1, Kd1) = (26, 0, 0.12)
+        (Kp2, Ki2, Kd2) = (15, 0, 0.07)
 
     bus = can.interface.Bus(bitrate=BITRATE)
 
