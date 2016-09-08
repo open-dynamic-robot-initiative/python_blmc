@@ -16,5 +16,5 @@ board.
 Requirements
 ------------
 
- * python-can (v 1.5.1 or higher!)
+ * python-can (>= 1.5.1 required when useing PCAN)
  * numpy
