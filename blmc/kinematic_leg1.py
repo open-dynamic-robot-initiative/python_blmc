@@ -64,6 +64,7 @@ def inverse_kinematics(x, y):
     # http://www.diag.uniroma1.it/~deluca/rob1_en/10_InverseKinematics.pdf
 
     c2 = (x**2 + y**2 - l1**2 - l2**2) / (2 * l1 * l2)
+    c2 = min(c2, 1.0) # avoid exposions due to numerical instability
     s2 = np.sqrt(1 - c2**2)
 
     th2 = atan2(s2, c2)
