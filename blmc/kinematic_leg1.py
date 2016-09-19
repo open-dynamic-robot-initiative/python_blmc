@@ -3,6 +3,9 @@ Functions for the kinematics of leg number 1.
 """
 import numpy as np
 
+JOINT_1_GEAR_FACTOR = 3
+JOINT_2_GEAR_FACTOR = 3
+
 def tf01(th1):
     """Get transformation matrix from base (0) to knee (1).
 
@@ -69,9 +72,45 @@ def inverse_kinematics(x, y):
     return (th1, th2)
 
 
+def inverse_kinematics_mrev(x, y):
+    (th1, th2) = inverse_kinematics(x, y)
+    return (rad_to_mrev(th1) * JOINT_1_GEAR_FACTOR,
+            rad_to_mrev(th2) * JOINT_2_GEAR_FACTOR)
+
+
 def mrev_to_rad(mrev):
     """Convert mrev to radian."""
     return mrev * 2*np.pi
+
+
+def rad_to_mrev(rad):
+    """Convert radian to mrev."""
+    return rad / (2*np.pi)
+
+
+def foot_position(mpos1, mpos2):
+    """Compute foot position in base frame.
+
+    Parameter
+    =========
+    mpos1 : float
+        Angular position of motor 1 in mrev.
+    mpos2 : float
+        Angular position of motor 2 in mrev.
+
+    Returns
+    =======
+    foot_0 : (float, float)
+        (x,y)-position of the foot in the base frame.
+    """
+    th1 = mrev_to_rad(mpos1) / JOINT_1_GEAR_FACTOR
+    th2 = mrev_to_rad(mpos2) / JOINT_2_GEAR_FACTOR
+    foot_2 = np.matrix([0, 0, 1]).transpose()
+    foot_0 = tf01(th1) * tf12(th2) * foot_2
+    foot_0 = np.asarray(foot_0.transpose())[0, :2]
+
+    return foot_0
+
 
 
 def is_pose_safe(mpos1, mpos2, foot_0):
