@@ -18,18 +18,17 @@ BITRATE = 1e6
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 8:
-        print("Usage: {} goal_pos Kp1 Ki1 Kd1 Kp2 Ki2 Kd2".format(sys.argv[0]))
+    if len(sys.argv) != 7:
+        print("Usage: {} Kp1 Ki1 Kd1 Kp2 Ki2 Kd2".format(sys.argv[0]))
         sys.exit(1)
 
 
-    goal_pos = float(sys.argv[1])
-    Kp1 = float(sys.argv[2])
-    Ki1 = float(sys.argv[3])
-    Kd1 = float(sys.argv[4])
-    Kp2 = float(sys.argv[5])
-    Ki2 = float(sys.argv[6])
-    Kd2 = float(sys.argv[7])
+    Kp1 = float(sys.argv[1])
+    Ki1 = float(sys.argv[2])
+    Kd1 = float(sys.argv[3])
+    Kp2 = float(sys.argv[4])
+    Ki2 = float(sys.argv[5])
+    Kd2 = float(sys.argv[6])
 
     mtr_data = MotorData()
     adc = AdcResult()
@@ -49,7 +48,6 @@ if __name__ == "__main__":
         Kp1, Ki1, Kd1))
     print("Setup controller 2 with Kp = {}, Ki = {}, Kd = {}".format(
         Kp2, Ki2, Kd2))
-    print("Goal position: {}".format(goal_pos))
     vctrl1 = PositionController(Kp1, Ki1, Kd1)
     vctrl2 = PositionController(Kp2, Ki2, Kd2)
 
