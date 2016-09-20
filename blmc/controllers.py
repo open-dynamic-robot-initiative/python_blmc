@@ -20,7 +20,7 @@ class PositionController:
 	def update_data(self, mtr):
 		self._mtr = mtr
 
-	def run(self, refpos):
+	def run(self, refpos, verbose=True):
 		error = refpos - self._mtr.position.value
 		u = self._pid.GenOut(error, self._mtr.position.timestamp)
 		self.iqref = u
@@ -29,8 +29,9 @@ class PositionController:
 		self.iqref = min(self.iqref, self._maxval)
 		self.iqref = max(self.iqref, -self._maxval)
 
-		print("RefPos = {},\t\tPos = {:.4f}\t\tIqRef = {:.4f}\t\tdt [ms] = {:.2f}".format(
-			refpos, self._mtr.position.value, self.iqref, self._pid.dt*1000.0))
+		if verbose:
+			print("RefPos = {},\t\tPos = {:.4f}\t\tIqRef = {:.4f}\t\tdt [ms] = {:.2f}".format(
+				refpos, self._mtr.position.value, self.iqref, self._pid.dt*1000.0))
 
 
 class VelocityController:
