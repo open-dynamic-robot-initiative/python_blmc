@@ -110,8 +110,8 @@ if __name__ == "__main__":
         if first_x is None:
             first_x = foot_pos[0]
 
-        goal_x = first_x - adc.a / 10.0
-        goal_y = adc.b / 10.0
+        goal_x = first_x - adc.a / 5.0
+        goal_y = (adc.b - 0.5) / 3.0
 
         (goal_mpos1, goal_mpos2) = kin.inverse_kinematics_mrev(goal_x, goal_y)
 
