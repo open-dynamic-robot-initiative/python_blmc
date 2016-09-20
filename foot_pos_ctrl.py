@@ -63,14 +63,20 @@ if __name__ == "__main__":
     time.sleep(0.2)
 
     first_x = None
+    position_ticks = 0
 
     def on_position_msg(msg):
-        global first_x
+        global first_x, position_ticks
 
         mtr_data.set_position(msg)
 
+        position_ticks += 1
+        if position_ticks < 2:
+            return
+        position_ticks = 0
+
         print(mtr_data.to_string())
-        print(adc.to_string())
+        #print(adc.to_string())
 
         mpos1 = mtr_data.mtr1.position.value
         mpos2 = mtr_data.mtr2.position.value
@@ -90,11 +96,11 @@ if __name__ == "__main__":
 
         if mtr_data.status.mtr1_ready:
             vctrl1.update_data(mtr_data.mtr1)
-            vctrl1.run(goal_mpos1)
+            vctrl1.run(goal_mpos[0], verbose=False)
 
         if mtr_data.status.mtr2_ready:
             vctrl2.update_data(mtr_data.mtr2)
-            vctrl2.run(goal_mpos2)
+            vctrl2.run(goal_mpos[1], verbose=False)
 
         send_mtr_current(bus, vctrl1.iqref, vctrl2.iqref)
         print()
