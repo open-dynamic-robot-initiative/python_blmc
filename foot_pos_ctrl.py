@@ -8,6 +8,7 @@ import can
 import signal
 import sys
 import traceback
+import numpy as np
 from blmc.motor_data import *
 from blmc.conversion import *
 from blmc.controllers import PositionController
@@ -99,21 +100,31 @@ if __name__ == "__main__":
         print(mtr_data.to_string())
         #print(adc.to_string())
 
-        mpos1 = mtr_data.mtr1.position.value
-        mpos2 = mtr_data.mtr2.position.value
+        current_mpos = np.array([mtr_data.mtr1.position.value,
+                                 mtr_data.mtr2.position.value])
 
-        foot_pos = kin.foot_position(mpos1, mpos2)
+        foot_pos = kin.foot_position(current_mpos[0], current_mpos[1])
 
-        if not kin.is_pose_safe(mpos1, mpos2, foot_pos):
+        if not kin.is_pose_safe(current_mpos[0], current_mpos[1], foot_pos):
             raise RuntimeError("EMERGENCY BREAK")
 
         if first_x is None:
             first_x = foot_pos[0]
 
-        goal_x = first_x - adc.a / 5.0
-        goal_y = (adc.b - 0.5) / 3.0
+        foot_goal = np.empty(2)
+        foot_goal[0] = first_x - adc.a / 5.0
+        foot_goal[1] = (adc.b - 0.5) / 3.0
 
-        (goal_mpos1, goal_mpos2) = kin.inverse_kinematics_mrev(goal_x, goal_y)
+        foot_pos_error = np.linalg.norm(foot_pos - foot_goal)
+        print("(x,y) = ({:.3f}, {:.3f}) ~ ({:.3f}, {:.3f}), err = {}".format(
+            foot_pos[0], foot_pos[1], foot_goal[0], foot_goal[1],
+            foot_pos_error))
+
+        goal_mpos = np.asarray(kin.inverse_kinematics_mrev(
+            foot_goal[0], foot_goal[1]))
+
+        #print("(th1, th2) = ({:.3f}, {:.3f}) ~ ({:.3f}, {:.3f})".format(
+        #    current_mpos[0], current_mpos[1], goal_mpos[0], goal_mpos[1]))
 
         if mtr_data.status.mtr1_ready:
             vctrl1.update_data(mtr_data.mtr1)
