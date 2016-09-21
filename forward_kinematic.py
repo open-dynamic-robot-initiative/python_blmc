@@ -22,6 +22,7 @@ if __name__ == "__main__":
     foot_2 = np.matrix([0, 0, 1]).transpose()
 
     ch.send_command(bus, ch.Command.send_position, 1)
+    md.init_position_offset(bus, mtr_data)
 
     # wait for messages and update data
     for msg in bus:
