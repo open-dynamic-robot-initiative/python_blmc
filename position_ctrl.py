@@ -17,97 +17,93 @@ from blmc.can_helper import *
 BITRATE = 1e6
 
 
-def handle_optoforce_package(data):
-	pkt = OptoForceDataPacket31()
-	try:
-		pkt.set_packet_bytes(data)
-		return pkt.fz
-	except ValueError, e:
-		print("Error: {}".format(e))
-
-
 if __name__ == "__main__":
-	if len(sys.argv) != 8:
-		print("Usage: {} goal_pos Kp1 Ki1 Kd1 Kp2 Ki2 Kd2".format(sys.argv[0]))
-		sys.exit(1)
+    if len(sys.argv) != 8:
+        print("Usage: {} goal_pos Kp1 Ki1 Kd1 Kp2 Ki2 Kd2".format(sys.argv[0]))
+        sys.exit(1)
 
+    goal_pos = float(sys.argv[1])
+    Kp1 = float(sys.argv[2])
+    Ki1 = float(sys.argv[3])
+    Kd1 = float(sys.argv[4])
+    Kp2 = float(sys.argv[5])
+    Ki2 = float(sys.argv[6])
+    Kd2 = float(sys.argv[7])
 
-	goal_pos = float(sys.argv[1])
-	Kp1 = float(sys.argv[2])
-	Ki1 = float(sys.argv[3])
-	Kd1 = float(sys.argv[4])
-	Kp2 = float(sys.argv[5])
-	Ki2 = float(sys.argv[6])
-	Kd2 = float(sys.argv[7])
+    mtr_data = MotorData()
+    adc = AdcResult()
+    bus = can.interface.Bus(bitrate=BITRATE)
 
-	mtr_data = MotorData()
-	adc = AdcResult()
-	bus = can.interface.Bus(bitrate=BITRATE)
+    # setup sigint handler to disable motor on CTRL+C
+    def sigint_handler(signal, frame):
+            print('Stop motor and shut down.')
+            send_mtr_current(bus, 0, 0)
+            send_msg(bus, msg_disable_motor1)
+            send_msg(bus, msg_disable_motor2)
+            sys.exit(0)
+    signal.signal(signal.SIGINT, sigint_handler)
 
-	# setup sigint handler to disable motor on CTRL+C
-	def sigint_handler(signal, frame):
-			print('Stop motor and shut down.')
-			send_mtr_current(bus, 0, 0)
-			send_msg(bus, msg_disable_motor1)
-			send_msg(bus, msg_disable_motor2)
-			sys.exit(0)
-	signal.signal(signal.SIGINT, sigint_handler)
+    print("Setup controller 1 with Kp = {}, Ki = {}, Kd = {}".format(
+        Kp1, Ki1, Kd1))
+    print("Setup controller 2 with Kp = {}, Ki = {}, Kd = {}".format(
+        Kp2, Ki2, Kd2))
+    print("Goal position: {}".format(goal_pos))
+    print()
+    vctrl1 = PositionController(Kp1, Ki1, Kd1)
+    vctrl2 = PositionController(Kp2, Ki2, Kd2)
 
+    #print("Enable system...")
+    send_msg(bus, msg_ensable_system)
 
-	print("Setup controller 1 with Kp = {}, Ki = {}, Kd = {}".format(
-		Kp1, Ki1, Kd1))
-	print("Setup controller 2 with Kp = {}, Ki = {}, Kd = {}".format(
-		Kp2, Ki2, Kd2))
-	print("Goal position: {}".format(goal_pos))
-	vctrl1 = PositionController(Kp1, Ki1, Kd1)
-	vctrl2 = PositionController(Kp2, Ki2, Kd2)
+    #print("Enable motors...")
+    send_mtr_current(bus, 0, 0) # start with zero
+    send_msg(bus, msg_enable_motor1)
+    send_msg(bus, msg_enable_motor2)
+    # Wait till the motors are ready
+    wait_for_motors_ready(bus, mtr_data)
 
-	print("Enable system...")
-	send_msg(bus, msg_ensable_system)
+    # Initialize leg position
+    init_position_offset(bus, mtr_data)
 
-	print("Enable motors...")
-	send_mtr_current(bus, 0, 0) # start with zero
-	send_msg(bus, msg_enable_motor1)
-	send_msg(bus, msg_enable_motor2)
+    raw_input("Press Enter to start joint position control")
 
-	# wait a moment for the initial messages to be handled
-	time.sleep(0.2)
+    # Make sure we have the latest position data
+    update_position(bus, mtr_data, 0.5)
 
-	def on_position_msg(msg):
-		mtr_data.set_position(msg)
+    def on_position_msg(msg):
+        mtr_data.set_position(msg)
 
-		print(mtr_data.to_string())
-		print(adc.to_string())
+        print(mtr_data.to_string())
+        print(adc.to_string())
 
-		if ((abs(mtr_data.mtr1.position.value) > 1.1)
-				or (abs(mtr_data.mtr2.position.value) > 1.1)):
-			raise RuntimeError("EMERGENCY BREAK")
+        if ((abs(mtr_data.mtr1.position.value) > 1.1)
+                or (abs(mtr_data.mtr2.position.value) > 1.1)):
+            raise RuntimeError("EMERGENCY BREAK")
 
-		if mtr_data.status.mtr1_ready:
-			vctrl1.update_data(mtr_data.mtr1)
-			vctrl1.run(goal_pos * adc.a)
+        if mtr_data.status.mtr1_ready:
+            vctrl1.update_data(mtr_data.mtr1)
+            vctrl1.run(goal_pos * adc.a)
 
-		if mtr_data.status.mtr2_ready:
-			vctrl2.update_data(mtr_data.mtr2)
-			vctrl2.run(goal_pos * adc.b)
+        if mtr_data.status.mtr2_ready:
+            vctrl2.update_data(mtr_data.mtr2)
+            vctrl2.run(goal_pos * adc.b)
 
-		send_mtr_current(bus, vctrl1.iqref, vctrl2.iqref)
-		print()
+        send_mtr_current(bus, vctrl1.iqref, vctrl2.iqref)
+        print()
 
-	msg_handler = MessageHandler()
-	msg_handler.set_id_handler(ArbitrationIds.status, mtr_data.set_status)
-	msg_handler.set_id_handler(ArbitrationIds.current, mtr_data.set_current)
-	msg_handler.set_id_handler(ArbitrationIds.position, on_position_msg)
-	msg_handler.set_id_handler(ArbitrationIds.velocity, mtr_data.set_velocity)
-	msg_handler.set_id_handler(ArbitrationIds.adc6, adc.set_values)
+    msg_handler = MessageHandler()
+    msg_handler.set_id_handler(ArbitrationIds.status, mtr_data.set_status)
+    msg_handler.set_id_handler(ArbitrationIds.current, mtr_data.set_current)
+    msg_handler.set_id_handler(ArbitrationIds.position, on_position_msg)
+    msg_handler.set_id_handler(ArbitrationIds.velocity, mtr_data.set_velocity)
+    msg_handler.set_id_handler(ArbitrationIds.adc6, adc.set_values)
 
-
-	# wait for messages and update data
-	for msg in bus:
-		try:
-			msg_handler.handle_msg(msg)
-		except:
-			print("\n\n=========== ERROR ============")
-			print(traceback.format_exc())
-			send_msg(bus, msg_disable_system)
-			break
+    # wait for messages and update data
+    for msg in bus:
+        try:
+            msg_handler.handle_msg(msg)
+        except:
+            print("\n\n=========== ERROR ============")
+            print(traceback.format_exc())
+            send_msg(bus, msg_disable_system)
+            break
