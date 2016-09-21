@@ -3,8 +3,17 @@ Functions for the kinematics of leg number 1.
 """
 import numpy as np
 
-JOINT_1_GEAR_FACTOR = 3
-JOINT_2_GEAR_FACTOR = 3
+
+class LegProp:
+    joint_1_gear_factor = 3
+    joint_2_gear_factor = 3
+
+    l1 = 0.1  # Length of link 1
+    l2 = 0.1  # Length of link 2
+
+    motor_1_kt = 0.018
+    motor_2_kt = 0.018
+
 
 def tf01(th1):
     """Get transformation matrix from base (0) to knee (1).
@@ -16,9 +25,9 @@ def tf01(th1):
     """
     Cth = np.cos(th1)
     Sth = np.sin(th1)
-    return np.matrix([[Cth,  Sth, 0.1*Cth],
-                      [Sth, -Cth, 0.1*Sth],
-                      [  0,    0,       1]])
+    return np.matrix([[Cth,  Sth, LegProp.l1 * Cth],
+                      [Sth, -Cth, LegProp.l1 * Sth],
+                      [  0,    0,                1]])
 
 
 def tf12(th2):
@@ -31,9 +40,9 @@ def tf12(th2):
     """
     Cth = np.cos(th2)
     Sth = np.sin(th2)
-    return np.matrix([[Cth, -Sth, 0.1*Cth],
-                      [Sth,  Cth, 0.1*Sth],
-                      [  0,    0,       1]])
+    return np.matrix([[Cth, -Sth, LegProp.l2 * Cth],
+                      [Sth,  Cth, LegProp.l2 * Sth],
+                      [  0,    0,                1]])
 
 
 def inverse_kinematics(x, y):
@@ -56,8 +65,8 @@ def inverse_kinematics(x, y):
     th2 : float
         Angluar position of joint 2 in radian
     """
-    l1 = 0.1
-    l2 = 0.1
+    l1 = LegProp.l1
+    l2 = LegProp.l2
     atan2 = np.arctan2
 
     # done with much help of
@@ -75,8 +84,8 @@ def inverse_kinematics(x, y):
 
 def inverse_kinematics_mrev(x, y):
     (th1, th2) = inverse_kinematics(x, y)
-    return (rad_to_mrev(th1) * JOINT_1_GEAR_FACTOR,
-            rad_to_mrev(th2) * JOINT_2_GEAR_FACTOR)
+    return (rad_to_mrev(th1) * LegProp.joint_1_gear_factor,
+            rad_to_mrev(th2) * LegProp.joint_2_gear_factor)
 
 
 def mrev_to_rad(mrev):
@@ -104,14 +113,13 @@ def foot_position(mpos1, mpos2):
     foot_0 : (float, float)
         (x,y)-position of the foot in the base frame.
     """
-    th1 = mrev_to_rad(mpos1) / JOINT_1_GEAR_FACTOR
-    th2 = mrev_to_rad(mpos2) / JOINT_2_GEAR_FACTOR
+    th1 = mrev_to_rad(mpos1) / LegProp.joint_1_gear_factor
+    th2 = mrev_to_rad(mpos2) / LegProp.joint_2_gear_factor
     foot_2 = np.matrix([0, 0, 1]).transpose()
     foot_0 = tf01(th1) * tf12(th2) * foot_2
     foot_0 = np.asarray(foot_0.transpose())[0, :2]
 
     return foot_0
-
 
 
 def is_pose_safe(mpos1, mpos2, foot_0):
