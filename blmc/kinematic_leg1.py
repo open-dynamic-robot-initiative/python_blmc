@@ -143,4 +143,41 @@ def is_pose_safe(mpos1, mpos2, foot_0):
         and (foot_0[0] > -0.1) and (foot_0[0] > 0 or abs(foot_0[1]) > 0.04))
 
 
+def foot_force(mpos1, mpos2, iq1, iq2):
+    """Compute the force applied to the foot based on motor torques.
+
+    Parameter
+    ========
+    mpos1 : float
+        Angular position of motor 1 in mrev.
+    mpos2 : float
+        Angular position of motor 2 in mrev.
+    iq1 : float
+        Current I_q of motor 1 in A.
+    iq2 : float
+        Current I_q of motor 2 in A.
+
+    Returns
+    =======
+    force : array([fx, fy])
+        Force applied to the foot divided into x- and y-components.
+    """
+    l1 = LegProp.l1
+    l2 = LegProp.l2
+    q1 = mrev_to_rad(mpos1) / LegProp.joint_1_gear_factor
+    q2 = mrev_to_rad(mpos2) / LegProp.joint_2_gear_factor
+    t1 = iq1 * LegProp.motor_1_kt * LegProp.joint_1_gear_factor
+    t2 = iq2 * LegProp.motor_2_kt * LegProp.joint_2_gear_factor
+    sin = np.sin
+    cos = np.cos
+
+    # equations generated and simplified with SymPy
+    fx = -(l1*l2*t1*sin(q2) + (l1*cos(q1) + l2*cos(q1 - q2))*(l2*t1*sin(q1 -
+        q2) + t2*(l1*sin(q1) + l2*sin(q1 - q2))))/(l1*l2*(l1*sin(q1) +
+            l2*sin(q1 - q2))*sin(q2))
+    fy = -(l1*t2*sin(q1) + l2*t1*sin(q1 - q2) + l2*t2*sin(q1 -
+        q2))/(l1*l2*sin(q2))
+
+    return np.array((fx, fy))
+
 

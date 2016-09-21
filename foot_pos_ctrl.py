@@ -18,23 +18,6 @@ import blmc.kinematic_leg1 as kin
 BITRATE = 1e6
 
 
-def comp_foot_force(q1, q2, iq1, iq2):
-    l1 = 0.1
-    l2 = 0.1
-    t1 = iq1 * 0.018 * 3
-    t2 = iq2 * 0.018 * 3
-    sin = np.sin
-    cos = np.cos
-
-    fx = -(l1*l2*t1*sin(q2) + (l1*cos(q1) + l2*cos(q1 - q2))*(l2*t1*sin(q1 -
-        q2) + t2*(l1*sin(q1) + l2*sin(q1 - q2))))/(l1*l2*(l1*sin(q1) +
-            l2*sin(q1 - q2))*sin(q2))
-    fy = -(l1*t2*sin(q1) + l2*t1*sin(q1 - q2) + l2*t2*sin(q1 -
-        q2))/(l1*l2*sin(q2))
-
-    return np.array((fx, fy))
-
-
 if __name__ == "__main__":
     # ground contact
     (Kp1, Ki1, Kd1) = (50, 0, 0.15)
@@ -139,13 +122,10 @@ if __name__ == "__main__":
         #print("(th1, th2) = ({:.3f}, {:.3f}) ~ ({:.3f}, {:.3f})".format(
         #    current_mpos[0], current_mpos[1], goal_mpos[0], goal_mpos[1]))
 
-        q1 = kin.mrev_to_rad(mtr_data.mtr1.position.value) / 3
-        q2 = kin.mrev_to_rad(mtr_data.mtr2.position.value) / 3
-        force = comp_foot_force(q1, q2,
+        force = kin.foot_force(
+                mtr_data.mtr1.position.value, mtr_data.mtr2.position.value,
                 mtr_data.mtr1.current.value, mtr_data.mtr2.current.value)
-        force_N = np.linalg.norm(force)
-        print("force: {}".format(force))
-        #print("force: {} N".format(force_N))
+        #print("force: {}".format(force))
 
         if force[0] > 0.7:
             print("Ground")
