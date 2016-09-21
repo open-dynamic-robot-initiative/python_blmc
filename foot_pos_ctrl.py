@@ -36,17 +36,13 @@ def comp_foot_force(q1, q2, iq1, iq2):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 7:
-        print("Usage: {} Kp1 Ki1 Kd1 Kp2 Ki2 Kd2".format(sys.argv[0]))
-        sys.exit(1)
+    # ground contact
+    (Kp1, Ki1, Kd1) = (50, 0, 0.15)
+    (Kp2, Ki2, Kd2) = (20, 0, 0.1)
+    # air
+    (Kp1_a, Ki1_a, Kd1_a) = (10, 0, 0.25)
+    (Kp2_a, Ki2_a, Kd2_a) = (6, 0, 0.2)
 
-
-    Kp1 = float(sys.argv[1])
-    Ki1 = float(sys.argv[2])
-    Kd1 = float(sys.argv[3])
-    Kp2 = float(sys.argv[4])
-    Ki2 = float(sys.argv[5])
-    Kd2 = float(sys.argv[6])
 
     mtr_data = MotorData()
     adc = AdcResult()
@@ -153,8 +149,12 @@ if __name__ == "__main__":
 
         if force[0] > 0.7:
             print("Ground")
+            vctrl1.update_gains(Kp1, Ki1, Kd1)
+            vctrl2.update_gains(Kp2, Ki2, Kd2)
         else:
             print("Air")
+            vctrl1.update_gains(Kp1_a, Ki1_a, Kd1_a)
+            vctrl2.update_gains(Kp2_a, Ki2_a, Kd2_a)
 
         if mtr_data.status.mtr1_ready:
             vctrl1.update_data(mtr_data.mtr1)

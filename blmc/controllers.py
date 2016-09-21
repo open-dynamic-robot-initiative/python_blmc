@@ -13,12 +13,16 @@ class PositionController:
 		self._maxval = 9.0
 		self.iqref = 0
 
+		self.update_gains(Kp, Ki, Kd)
+
+	def update_data(self, mtr):
+		self._mtr = mtr
+
+	def update_gains(self, Kp, Ki, Kd):
 		self._pid.SetKp(Kp)
 		self._pid.SetKi(Ki)
 		self._pid.SetKd(Kd)
 
-	def update_data(self, mtr):
-		self._mtr = mtr
 
 	def run(self, refpos, verbose=True):
 		error = refpos - self._mtr.position.value
