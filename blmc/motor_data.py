@@ -15,9 +15,12 @@ class ArbitrationIds:
     optoforce_trans = 0x100
     optoforce_recv  = 0x101
 
+    command = 0x000
+    current_ref = 0x005
+
 
 class MessageHandler:
-    
+
     def __init__(self):
         self._id_fnx_map = {}
 

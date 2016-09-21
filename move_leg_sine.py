@@ -24,8 +24,8 @@ def get_position_reference(t):
     # start both at 0 and run with same frequency (i.e. they always are at zero
     # at the same time)
 
-    range1 = 0.3
-    range2 = 0.6
+    range1 = 0.4
+    range2 = 0.8
     freq = 0.7
 
     t_scale = 2.0 * np.pi * freq
@@ -86,19 +86,7 @@ if __name__ == "__main__":
         Kp2, Ki2, Kd2))
     print()
 
-    #print("Enable system...")
-    send_msg(bus, msg_ensable_system)
-
-    #print("Enable motors...")
-    send_mtr_current(bus, 0, 0) # start with zero
-    send_msg(bus, msg_enable_motor1)
-    send_msg(bus, msg_enable_motor2)
-
-    # Wait till the motors are ready
-    wait_for_motors_ready(bus, mtr_data)
-
-    # Initialize leg position
-    init_position_offset(bus, mtr_data)
+    start_system(bus, mtr_data)
 
     raw_input("Move leg to zero position and press enter to start movement.")
 

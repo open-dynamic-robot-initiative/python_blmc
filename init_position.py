@@ -5,6 +5,7 @@ from __future__ import print_function
 import can
 import time
 import blmc.motor_data as md
+import blmc.can_helper as ch
 
 
 BITRATE = 1e6
@@ -14,6 +15,9 @@ if __name__ == "__main__":
     mtr_data = md.MotorData()
     bus = can.interface.Bus(bitrate=BITRATE)
     last_print = 0
+
+    # We need the position data for this to work
+    ch.send_command(bus, ch.Command.send_position, 1)
 
     # Initialize the position
     md.init_position_offset(bus, mtr_data)

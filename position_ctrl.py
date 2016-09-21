@@ -52,18 +52,7 @@ if __name__ == "__main__":
     vctrl1 = PositionController(Kp1, Ki1, Kd1)
     vctrl2 = PositionController(Kp2, Ki2, Kd2)
 
-    #print("Enable system...")
-    send_msg(bus, msg_ensable_system)
-
-    #print("Enable motors...")
-    send_mtr_current(bus, 0, 0) # start with zero
-    send_msg(bus, msg_enable_motor1)
-    send_msg(bus, msg_enable_motor2)
-    # Wait till the motors are ready
-    wait_for_motors_ready(bus, mtr_data)
-
-    # Initialize leg position
-    init_position_offset(bus, mtr_data)
+    start_system(bus, mtr_data)
 
     raw_input("Press Enter to start joint position control")
 

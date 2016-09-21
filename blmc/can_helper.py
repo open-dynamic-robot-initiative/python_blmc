@@ -4,7 +4,7 @@ Some simple helper functions for sending CAN messages.
 import can
 import time
 from .conversion import value_to_q_bytes
-from .motor_data import ArbitrationIds
+from .motor_data import ArbitrationIds, init_position_offset
 
 msg_enable_motor1 = can.Message(arbitration_id=0x000,
         data=[0, 0, 0, 1, 0, 0, 0, 2],
@@ -29,6 +29,30 @@ msg_ensable_system = can.Message(arbitration_id=0x000,
 msg_disable_system = can.Message(arbitration_id=0x000,
         data=[0, 0, 0, 0, 0, 0, 0, 1],
         extended_id=False)
+
+
+# TODO: this should be in motor_data ?!
+class Command:
+    enable_sys = 1
+    enable_mtr1 = 2
+    enable_mtr2 = 3
+    enable_vspring1 = 4
+    enable_vspring2 = 5
+    send_current = 12
+    send_position = 13
+    send_velocity = 14
+    send_adc6 = 15
+    send_all = 20
+
+
+def send_command(bus, cmd_id, value):
+    # As long as both command id and value do not exceed a single byte, we can
+    # keep it that simple :)
+    # FIXME make better anyway, otherwise it will break in the future!
+    msg = can.Message(arbitration_id=ArbitrationIds.command,
+            data=[0, 0, 0, value, 0, 0, 0, cmd_id],
+            extended_id=False)
+    send_msg(bus, msg)
 
 
 def send_msg(bus, msg):
@@ -76,3 +100,14 @@ def wait_for_motors_ready(bus, mtr_data):
             elif not printed_align_msg:
                 print("Motors are aligned. Please wait...")
                 printed_align_msg = True
+
+
+def start_system(bus, mtr_data):
+    send_command(bus, Command.enable_sys, 1)
+    send_mtr_current(bus, 0, 0)  # clear old values
+    send_command(bus, Command.send_all, 1)
+    send_command(bus, Command.enable_mtr1, 1)
+    send_command(bus, Command.enable_mtr2, 1)
+
+    wait_for_motors_ready(bus, mtr_data)
+    init_position_offset(bus, mtr_data)

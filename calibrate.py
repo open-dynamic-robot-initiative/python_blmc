@@ -7,6 +7,7 @@ import time
 import numpy as np
 import cPickle as pickle
 import blmc.motor_data as md
+import blmc.can_helper as ch
 
 
 BITRATE = 1e6
@@ -17,8 +18,9 @@ if __name__ == "__main__":
     bus = can.interface.Bus(bitrate=BITRATE,
             can_filter=[{"can_id": md.ArbitrationIds.position,
                          "can_mask": 0xFFF}])
-
     last_print = 0
+
+    ch.send_command(bus, ch.Command.send_position, 1)
 
     raw_input("Move both joints in positive direction until stop."
               " Then press enter.")

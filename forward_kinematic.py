@@ -8,6 +8,7 @@ import time
 import numpy as np
 import blmc.motor_data as md
 from blmc.kinematic_leg1 import *
+import blmc.can_helper as ch
 
 
 BITRATE = 1e6
@@ -17,15 +18,10 @@ if __name__ == "__main__":
     mtr_data = md.MotorData()
     bus = can.interface.Bus(bitrate=BITRATE)
 
-    #canhndlr = md.MessageHandler()
-    #canhndlr.set_id_handler(md.ArbitrationIds.status, mtr_data.set_status)
-    #canhndlr.set_id_handler(md.ArbitrationIds.current, mtr_data.set_current)
-    #canhndlr.set_id_handler(md.ArbitrationIds.position, mtr_data.set_position)
-    #canhndlr.set_id_handler(md.ArbitrationIds.velocity, mtr_data.set_velocity)
-    #canhndlr.set_id_handler(md.ArbitrationIds.adc6, adc.set_values)
-
     last_print = 0
     foot_2 = np.matrix([0, 0, 1]).transpose()
+
+    ch.send_command(bus, ch.Command.send_position, 1)
 
     # wait for messages and update data
     for msg in bus:
