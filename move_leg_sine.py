@@ -50,17 +50,17 @@ if __name__ == "__main__":
     #   sys.exit(1)
 
 
-    if len(sys.argv) == 8:
-        Kp1 = float(sys.argv[2])
-        Ki1 = float(sys.argv[3])
-        Kd1 = float(sys.argv[4])
-        Kp2 = float(sys.argv[5])
-        Ki2 = float(sys.argv[6])
-        Kd2 = float(sys.argv[7])
+    if len(sys.argv) == 7:
+        Kp1 = float(sys.argv[1])
+        Ki1 = float(sys.argv[2])
+        Kd1 = float(sys.argv[3])
+        Kp2 = float(sys.argv[4])
+        Ki2 = float(sys.argv[5])
+        Kd2 = float(sys.argv[6])
     else:
         print("Use default controller values")
-        (Kp1, Ki1, Kd1) = (26, 0, 0.12)
-        (Kp2, Ki2, Kd2) = (15, 0, 0.07)
+        (Kp1, Ki1, Kd1) = (16, 0, 0.12)
+        (Kp2, Ki2, Kd2) = (7, 0, 0.07)
 
     bus = can.interface.Bus(bitrate=BITRATE)
 
@@ -78,27 +78,35 @@ if __name__ == "__main__":
     adc = AdcResult()
     pos_ctrl1 = PositionController(Kp1, Ki1, Kd1)
     pos_ctrl2 = PositionController(Kp2, Ki2, Kd2)
-    pos_offset = None
     t_offset = None
 
     print("Setup controller 1 with Kp = {}, Ki = {}, Kd = {}".format(
         Kp1, Ki1, Kd1))
     print("Setup controller 2 with Kp = {}, Ki = {}, Kd = {}".format(
         Kp2, Ki2, Kd2))
+    print()
 
-    print("Enable system...")
+    #print("Enable system...")
     send_msg(bus, msg_ensable_system)
 
-    print("Enable motors...")
+    #print("Enable motors...")
     send_mtr_current(bus, 0, 0) # start with zero
     send_msg(bus, msg_enable_motor1)
     send_msg(bus, msg_enable_motor2)
 
-    # wait a moment for the initial messages to be handled
-    time.sleep(0.5)
+    # Wait till the motors are ready
+    wait_for_motors_ready(bus, mtr_data)
+
+    # Initialize leg position
+    init_position_offset(bus, mtr_data)
+
+    raw_input("Move leg to zero position and press enter to start movement.")
+
+    # Make sure we have the latest position data
+    update_position(bus, mtr_data, 0.5)
 
     def on_position_msg(msg):
-        global pos_offset, t_offset
+        global t_offset
 
         mtr_data.set_position(msg)
 
@@ -106,41 +114,31 @@ if __name__ == "__main__":
                 or (abs(mtr_data.mtr2.position.value) > 1.1)):
             emergency_break(bus)
 
-        if pos_offset is None:
-            pos_offset = (mtr_data.mtr1.position.value,
-                          mtr_data.mtr2.position.value)
-
         print(mtr_data.to_string())
-        print(adc.to_string())
+        #print(adc.to_string())
 
-        if mtr_data.status.mtr1_ready and mtr_data.status.mtr2_ready:
-            t = time.clock()
-            if t_offset is None:
-                t_offset = t
-                # TODO check if position is close to zero at start
-            t = t - t_offset
-            # wait a moment before starting the sinus by using an additional
-            # offset
-            start_up_offset = 3
-            if t > start_up_offset:
-                t = t - start_up_offset
+        t = time.clock()
+        if t_offset is None:
+            t_offset = t
+            # TODO check if position is close to zero at start
+        t = t - t_offset
+        # wait a moment before starting the sinus by using an additional
+        # offset
+        start_up_offset = 3
+        if t > start_up_offset:
+            t = t - start_up_offset
 
-                (posref1, posref2) = get_position_reference(t)
-            else:
-                posref1 = 0
-                posref2 = 0
-
-            posref1 += pos_offset[0]
-            posref2 += pos_offset[1]
-
-            pos_ctrl1.update_data(mtr_data.mtr1)
-            pos_ctrl1.run(posref1)
-            pos_ctrl2.update_data(mtr_data.mtr2)
-            pos_ctrl2.run(posref2)
-
-            send_mtr_current(bus, pos_ctrl1.iqref, pos_ctrl2.iqref)
+            (posref1, posref2) = get_position_reference(t)
         else:
-            send_mtr_current(bus, 0, 0)
+            posref1 = 0
+            posref2 = 0
+
+        pos_ctrl1.update_data(mtr_data.mtr1)
+        pos_ctrl1.run(posref1)
+        pos_ctrl2.update_data(mtr_data.mtr2)
+        pos_ctrl2.run(posref2)
+
+        send_mtr_current(bus, pos_ctrl1.iqref, pos_ctrl2.iqref)
 
         print()
 
