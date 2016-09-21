@@ -40,8 +40,8 @@ if __name__ == "__main__":
     (Kp1, Ki1, Kd1) = (50, 0, 0.15)
     (Kp2, Ki2, Kd2) = (20, 0, 0.1)
     # air
-    (Kp1_a, Ki1_a, Kd1_a) = (10, 0, 0.25)
-    (Kp2_a, Ki2_a, Kd2_a) = (6, 0, 0.2)
+    (Kp1_a, Ki1_a, Kd1_a) = (10, 0, 0.23)
+    (Kp2_a, Ki2_a, Kd2_a) = (6, 0, 0.23)
 
 
     mtr_data = MotorData()
