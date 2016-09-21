@@ -131,7 +131,7 @@ def is_pose_safe(mpos1, mpos2, foot_0):
     is_safe : bool
         True if the pose is safe, False if not.
     """
-    return ((abs(mpos1) < 1.2) and (abs(mpos2) < 1.2)
+    return ((abs(mpos1) < 1.2) and (abs(mpos2) < 1.35)
         and (foot_0[0] > -0.1) and (foot_0[0] > 0 or abs(foot_0[1]) > 0.04))
 
 
