@@ -57,28 +57,15 @@ if __name__ == "__main__":
     send_msg(bus, msg_enable_motor2)
 
     # Wait till the motors are ready
-    printed_align_msg = False
-    for msg in bus:
-        if msg.arbitration_id == ArbitrationIds.status:
-            mtr_data.set_status(msg)
-            if mtr_data.status.mtr1_ready and mtr_data.status.mtr2_ready:
-                break
-            elif not printed_align_msg:
-                print("Motors are aligned. Please wait...")
-                printed_align_msg = True
+    wait_for_motors_ready(bus, mtr_data)
 
     # Initialize leg position
     init_position_offset(bus, mtr_data)
 
     raw_input("Press Enter to start foot position control")
 
-    # Update position
-    start = time.clock()
-    for msg in bus:
-        if msg.arbitration_id == ArbitrationIds.position:
-            if start < time.clock() - 1:
-                mtr_data.set_position(msg)
-                break
+    # Make sure we have the latest position data
+    update_position(bus, mtr_data, 0.5)
 
     first_x = None
     position_ticks = 0
