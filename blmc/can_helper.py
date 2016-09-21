@@ -6,30 +6,6 @@ import time
 from .conversion import value_to_q_bytes
 from .motor_data import ArbitrationIds, init_position_offset
 
-msg_enable_motor1 = can.Message(arbitration_id=0x000,
-        data=[0, 0, 0, 1, 0, 0, 0, 2],
-        extended_id=False)
-
-msg_disable_motor1 = can.Message(arbitration_id=0x000,
-        data=[0, 0, 0, 0, 0, 0, 0, 2],
-        extended_id=False)
-
-msg_enable_motor2 = can.Message(arbitration_id=0x000,
-        data=[0, 0, 0, 1, 0, 0, 0, 3],
-        extended_id=False)
-
-msg_disable_motor2 = can.Message(arbitration_id=0x000,
-        data=[0, 0, 0, 0, 0, 0, 0, 3],
-        extended_id=False)
-
-msg_ensable_system = can.Message(arbitration_id=0x000,
-        data=[0, 0, 0, 1, 0, 0, 0, 1],
-        extended_id=False)
-
-msg_disable_system = can.Message(arbitration_id=0x000,
-        data=[0, 0, 0, 0, 0, 0, 0, 1],
-        extended_id=False)
-
 
 # TODO: this should be in motor_data ?!
 class Command:
@@ -102,7 +78,7 @@ def wait_for_motors_ready(bus, mtr_data):
                 printed_align_msg = True
 
 
-def start_system(bus, mtr_data):
+def start_system(bus, mtr_data, init_position=True):
     send_command(bus, Command.enable_sys, 1)
     send_mtr_current(bus, 0, 0)  # clear old values
     send_command(bus, Command.send_all, 1)
@@ -110,4 +86,9 @@ def start_system(bus, mtr_data):
     send_command(bus, Command.enable_mtr2, 1)
 
     wait_for_motors_ready(bus, mtr_data)
-    init_position_offset(bus, mtr_data)
+    if init_position:
+        init_position_offset(bus, mtr_data)
+
+def stop_system(bus):
+    send_command(bus, Command.enable_sys, 0)
+    send_mtr_current(bus, 0, 0)  # clear old values

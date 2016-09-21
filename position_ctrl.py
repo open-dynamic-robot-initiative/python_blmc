@@ -37,9 +37,7 @@ if __name__ == "__main__":
     # setup sigint handler to disable motor on CTRL+C
     def sigint_handler(signal, frame):
             print('Stop motor and shut down.')
-            send_mtr_current(bus, 0, 0)
-            send_msg(bus, msg_disable_motor1)
-            send_msg(bus, msg_disable_motor2)
+            stop_system(bus)
             sys.exit(0)
     signal.signal(signal.SIGINT, sigint_handler)
 
@@ -94,5 +92,5 @@ if __name__ == "__main__":
         except:
             print("\n\n=========== ERROR ============")
             print(traceback.format_exc())
-            send_msg(bus, msg_disable_system)
+            stop_system(bus)
             break
