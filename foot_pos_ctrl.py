@@ -38,6 +38,10 @@ class LinearTrajectory:
         self.speed = speed
         self._t_start = None
 
+        se = self.end - self.start
+        self._dist_start_end = np.linalg.norm(se)
+        self.step = se / self._dist_start_end * speed
+
     def next_step(self):
         """Get the next step of the trajectory or None if goal is reached."""
         t = time.clock()
@@ -47,15 +51,14 @@ class LinearTrajectory:
 
         # Vector from start to end
         se = self.end - self.start
-        dist_start_end = np.linalg.norm(se)
-        if dist_start_end == 0:
+        if self._dist_start_end == 0:
             # seems like start == end. We are already at the goal :)
             return None
 
         # to unit length
-        se_t = se / dist_start_end * self.speed * t
+        se_t = self.step * t
 
-        if np.linalg.norm(se_t) < dist_start_end:
+        if np.linalg.norm(se_t) < self._dist_start_end:
             return self.start + se_t
         else:
             # reached end
@@ -64,54 +67,107 @@ class LinearTrajectory:
 
 class PositionMaster:
 
-    def get_goal_pos(self):
-        return np.zeros(2)
+    def get_goal_pos(self, current_pos):
+        raise NotImplementedError()
 
 
 class PositionBySlider(PositionMaster):
 
     def __init__(self, adc):
+        self._start_up = True
         self._adc = adc
+        self._start_traj = None
+        self._slider_pos = np.zeros(2)
         self.max_x = 0.195
 
-    def get_goal_pos(self):
-        foot_goal = np.empty(2)
-        foot_goal[0] = self.max_x - adc.a / 5.0
-        foot_goal[1] = (adc.b - 0.5) / 3.0
-        return foot_goal
+    def get_goal_pos(self, current_pos):
+        self._slider_pos[0] = self.max_x - adc.a / 5.0
+        self._slider_pos[1] = (adc.b - 0.5) / 3.0
+
+        if self._start_up:
+            return self._do_start_up(current_pos)
+        else:
+            return self._slider_pos
+
+    def get_pid_gains(self):
+        return ((30, 0, 0.15), (15, 0, 0.1))
+
+    def _do_start_up(self, current_pos):
+        print("*** STARTUP ***")
+        if self._start_traj is None:
+            self._start_traj = LinearTrajectory(current_pos, self._slider_pos,
+                    0.03)
+        goal = self._start_traj.next_step()
+        if goal is None:
+            goal = self._slider_pos
+            self._start_up = False
+        return goal
+
+
+class State:
+    START_UP = 1
+    AIR = 2
+    GROUND = 3
 
 
 class JumpTrajectory(PositionMaster):
 
     def __init__(self, ground_contact_state):
+        self._state = State.START_UP
         self._gcs = ground_contact_state
-        self._last_on_ground = self._gcs.on_ground
-        self._kneel_down_speed = 0.1
-        self._kneel_down_trajectory = None
+        self._kneel_down_traj = None
+        self._start_traj = None
 
+        self._kneel_down_speed = 0.1
         y = 0.015
-        self._x_air = 0.13
-        self._x_kneel = 0.08
-        self._x_stretched = 0.197
         self._p_air = np.array([0.13, y])
         self._p_kneel = np.array([0.08, y])
         self._p_stretched = np.array([0.197, y])
 
-    def get_goal_pos(self):
-        if self._gcs.on_ground:
-            if not self._last_on_ground:
-                # Just landed. Reset timer.
-                self._kneel_down_trajectory = LinearTrajectory(
-                        self._p_air, self._p_kneel, self._kneel_down_speed)
+    def get_goal_pos(self, current_pos):
+        if self._state == State.START_UP:
+            return self._do_start_up(current_pos)
+        elif self._state == State.AIR:
+            return self._do_air()
+        else: # state == GROUND
+            return self._do_ground()
 
-            goal = self._kneel_down_trajectory.next_step()
-            if goal is None:
-                goal = self._p_stretched
-        else:
-            # We are the air. Go to landing pose immediately.
+    def get_pid_gains(self):
+        if self._state == State.START_UP:
+            return ((30, 0, 0.15), (15, 0, 0.1))
+        elif self._state == State.AIR:
+            return ((15, 0, 0.28), (6, 0, 0.23))
+        else: # state == GROUND
+            return ((50, 0, 0.15), (20, 0, 0.1))
+
+    def _do_start_up(self, current_pos):
+        print("*** STARTUP ***")
+        if self._start_traj is None:
+            self._start_traj = LinearTrajectory(
+                    current_pos, self._p_air, 0.05)
+        goal = self._start_traj.next_step()
+        if goal is None:
             goal = self._p_air
+            self._state = State.AIR
+        return goal
 
-        self._last_on_ground = self._gcs.on_ground
+    def _do_air(self):
+        print("~~~ AIR ~~~")
+        if self._gcs.on_ground:
+            self._state = State.GROUND
+            # Just landed. Set new kneel trajectory
+            self._kneel_down_traj = LinearTrajectory(
+                    self._p_air, self._p_kneel, self._kneel_down_speed)
+
+        return self._p_air
+
+    def _do_ground(self):
+        print("___GROUND___")
+        goal = self._kneel_down_traj.next_step()
+        if goal is None:
+            goal = self._p_stretched
+        if not self._gcs.on_ground:
+            self._state = State.AIR
         return goal
 
 
@@ -125,24 +181,27 @@ class GroundContactState:
 
 
 if __name__ == "__main__":
-    # ground contact
-    (Kp1, Ki1, Kd1) = (50, 0, 0.15)
-    (Kp2, Ki2, Kd2) = (20, 0, 0.1)
-    # air
-    (Kp1_a, Ki1_a, Kd1_a) = (15, 0, 0.28)
-    (Kp2_a, Ki2_a, Kd2_a) = (6, 0, 0.23)
-    # startup
-    (Kp1_s, Ki1_s, Kd1_s) = (30, 0, 0.15)
-    (Kp2_s, Ki2_s, Kd2_s) = (15, 0, 0.1)
+    if len(sys.argv) < 2 or sys.argv[1] not in ["slider", "jump"]:
+        print("Usage: {} slider|jump".format(sys.argv[0]))
+        sys.exit(0)
 
 
-    start_up = True
     mtr_data = MotorData()
     adc = AdcResult()
     bus = can.interface.Bus(bitrate=BITRATE)
     ground_state = GroundContactState()
-    #position_master = PositionBySlider(adc)
-    position_master = JumpTrajectory(ground_state)
+    position_ticks = 0
+
+    if sys.argv[1] == "slider":
+        print("Use the sliders")
+        print("===============\n")
+        position_master = PositionBySlider(adc)
+    elif sys.argv[1] == "jump":
+        print("Let it jump!")
+        print("============\n")
+        position_master = JumpTrajectory(ground_state)
+    else:
+        raise ValueError("Invalid mode selection")
 
     # setup sigint handler to disable motor on CTRL+C
     def sigint_handler(signal, frame):
@@ -151,13 +210,9 @@ if __name__ == "__main__":
             sys.exit(0)
     signal.signal(signal.SIGINT, sigint_handler)
 
-
-    print("Setup controller 1 with Kp = {}, Ki = {}, Kd = {}".format(
-        Kp1, Ki1, Kd1))
-    print("Setup controller 2 with Kp = {}, Ki = {}, Kd = {}".format(
-        Kp2, Ki2, Kd2))
-    vctrl1 = PositionController(Kp1, Ki1, Kd1)
-    vctrl2 = PositionController(Kp2, Ki2, Kd2)
+    pid_gains = position_master.get_pid_gains()
+    vctrl1 = PositionController(*pid_gains[0])
+    vctrl2 = PositionController(*pid_gains[1])
 
     start_system(bus, mtr_data)
 
@@ -166,17 +221,9 @@ if __name__ == "__main__":
     # Make sure we have the latest position data
     update_position(bus, mtr_data, 0.5)
 
-    # In the beginning, slowly move the leg to the start position
-    foot_pos = kin.foot_position(mtr_data.mtr1.position.value,
-                                 mtr_data.mtr2.position.value)
-    # FIXME does not work with sliders, as ADC is not yet received!
-    start_up_traj = LinearTrajectory(foot_pos, position_master.get_goal_pos(),
-            0.05)
-
-    position_ticks = 0
 
     def on_position_msg(msg):
-        global position_ticks, start_up
+        global position_ticks
 
         mtr_data.set_position(msg)
 
@@ -196,13 +243,13 @@ if __name__ == "__main__":
         if not kin.is_pose_safe(current_mpos[0], current_mpos[1], foot_pos):
             raise RuntimeError("EMERGENCY BREAK")
 
-        # TODO make this nicer
-        if start_up:
-            foot_goal = start_up_traj.next_step()
-            start_up = foot_goal is not None
+        force = kin.foot_force(
+                mtr_data.mtr1.position.value, mtr_data.mtr2.position.value,
+                mtr_data.mtr1.current.value, mtr_data.mtr2.current.value)
+        #print("force: {}".format(force))
+        ground_state.update_state(force)
 
-        if not start_up:
-            foot_goal = position_master.get_goal_pos()
+        foot_goal = position_master.get_goal_pos(foot_pos)
 
         foot_pos_error = np.linalg.norm(foot_pos - foot_goal)
         print("(x,y) = ({:.3f}, {:.3f}) ~ ({:.3f}, {:.3f}), err = {}".format(
@@ -215,24 +262,9 @@ if __name__ == "__main__":
         #print("(th1, th2) = ({:.3f}, {:.3f}) ~ ({:.3f}, {:.3f})".format(
         #    current_mpos[0], current_mpos[1], goal_mpos[0], goal_mpos[1]))
 
-        force = kin.foot_force(
-                mtr_data.mtr1.position.value, mtr_data.mtr2.position.value,
-                mtr_data.mtr1.current.value, mtr_data.mtr2.current.value)
-        #print("force: {}".format(force))
-
-        ground_state.update_state(force)
-        if start_up:
-            print("*** STARTUP ***")
-            vctrl1.update_gains(Kp1_s, Ki1_s, Kd1_s)
-            vctrl2.update_gains(Kp2_s, Ki2_s, Kd2_s)
-        elif ground_state.on_ground:
-            print("Ground")
-            vctrl1.update_gains(Kp1, Ki1, Kd1)
-            vctrl2.update_gains(Kp2, Ki2, Kd2)
-        else:
-            print("Air")
-            vctrl1.update_gains(Kp1_a, Ki1_a, Kd1_a)
-            vctrl2.update_gains(Kp2_a, Ki2_a, Kd2_a)
+        pid_gains = position_master.get_pid_gains()
+        vctrl1.update_gains(*pid_gains[0])
+        vctrl2.update_gains(*pid_gains[1])
 
         if mtr_data.status.mtr1_ready:
             vctrl1.update_data(mtr_data.mtr1)
