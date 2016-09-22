@@ -19,14 +19,27 @@ BITRATE = 1e6
 
 
 class LinearTrajectory:
+    """Generate a linear trajectory."""
 
     def __init__(self, start, end, speed):
+        """Initialize.
+
+        Parameter
+        =========
+        start : array
+            Start position
+        end : array
+            End positon
+        speed : float
+            Movement speed in m/s.
+        """
         self.start = start
         self.end = end
         self.speed = speed
         self._t_start = None
 
     def next_step(self):
+        """Get the next step of the trajectory or None if goal is reached."""
         t = time.clock()
         if self._t_start is None:
             self._t_start = t
@@ -54,6 +67,7 @@ class PositionMaster:
     def get_goal_pos(self):
         return np.zeros(2)
 
+
 class PositionBySlider(PositionMaster):
 
     def __init__(self, adc):
@@ -65,6 +79,7 @@ class PositionBySlider(PositionMaster):
         foot_goal[0] = self.max_x - adc.a / 5.0
         foot_goal[1] = (adc.b - 0.5) / 3.0
         return foot_goal
+
 
 class JumpTrajectory(PositionMaster):
 
@@ -114,16 +129,18 @@ if __name__ == "__main__":
     (Kp1, Ki1, Kd1) = (50, 0, 0.15)
     (Kp2, Ki2, Kd2) = (20, 0, 0.1)
     # air
-    (Kp1_a, Ki1_a, Kd1_a) = (15, 0, 0.32)
+    (Kp1_a, Ki1_a, Kd1_a) = (15, 0, 0.28)
     (Kp2_a, Ki2_a, Kd2_a) = (6, 0, 0.23)
+    # startup
+    (Kp1_s, Ki1_s, Kd1_s) = (30, 0, 0.15)
+    (Kp2_s, Ki2_s, Kd2_s) = (15, 0, 0.1)
 
 
+    start_up = True
     mtr_data = MotorData()
     adc = AdcResult()
     bus = can.interface.Bus(bitrate=BITRATE)
-
     ground_state = GroundContactState()
-
     #position_master = PositionBySlider(adc)
     position_master = JumpTrajectory(ground_state)
 
@@ -149,10 +166,17 @@ if __name__ == "__main__":
     # Make sure we have the latest position data
     update_position(bus, mtr_data, 0.5)
 
+    # In the beginning, slowly move the leg to the start position
+    foot_pos = kin.foot_position(mtr_data.mtr1.position.value,
+                                 mtr_data.mtr2.position.value)
+    # FIXME does not work with sliders, as ADC is not yet received!
+    start_up_traj = LinearTrajectory(foot_pos, position_master.get_goal_pos(),
+            0.05)
+
     position_ticks = 0
 
     def on_position_msg(msg):
-        global position_ticks
+        global position_ticks, start_up
 
         mtr_data.set_position(msg)
 
@@ -172,7 +196,13 @@ if __name__ == "__main__":
         if not kin.is_pose_safe(current_mpos[0], current_mpos[1], foot_pos):
             raise RuntimeError("EMERGENCY BREAK")
 
-        foot_goal = position_master.get_goal_pos()
+        # TODO make this nicer
+        if start_up:
+            foot_goal = start_up_traj.next_step()
+            start_up = foot_goal is not None
+
+        if not start_up:
+            foot_goal = position_master.get_goal_pos()
 
         foot_pos_error = np.linalg.norm(foot_pos - foot_goal)
         print("(x,y) = ({:.3f}, {:.3f}) ~ ({:.3f}, {:.3f}), err = {}".format(
@@ -191,7 +221,11 @@ if __name__ == "__main__":
         #print("force: {}".format(force))
 
         ground_state.update_state(force)
-        if ground_state.on_ground:
+        if start_up:
+            print("*** STARTUP ***")
+            vctrl1.update_gains(Kp1_s, Ki1_s, Kd1_s)
+            vctrl2.update_gains(Kp2_s, Ki2_s, Kd2_s)
+        elif ground_state.on_ground:
             print("Ground")
             vctrl1.update_gains(Kp1, Ki1, Kd1)
             vctrl2.update_gains(Kp2, Ki2, Kd2)
