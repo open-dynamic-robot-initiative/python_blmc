@@ -18,6 +18,37 @@ import blmc.kinematic_leg1 as kin
 BITRATE = 1e6
 
 
+class LinearTrajectory:
+
+    def __init__(self, start, end, speed):
+        self.start = start
+        self.end = end
+        self.speed = speed
+        self._t_start = None
+
+    def next_step(self):
+        t = time.clock()
+        if self._t_start is None:
+            self._t_start = t
+        t -= self._t_start
+
+        # Vector from start to end
+        se = self.end - self.start
+        dist_start_end = np.linalg.norm(se)
+        if dist_start_end == 0:
+            # seems like start == end. We are already at the goal :)
+            return None
+
+        # to unit length
+        se_t = se / dist_start_end * self.speed * t
+
+        if np.linalg.norm(se_t) < dist_start_end:
+            return self.start + se_t
+        else:
+            # reached end
+            return None
+
+
 class PositionMaster:
 
     def get_goal_pos(self):
@@ -40,33 +71,30 @@ class JumpTrajectory(PositionMaster):
     def __init__(self, ground_contact_state):
         self._gcs = ground_contact_state
         self._last_on_ground = self._gcs.on_ground
-        self._t = time.clock()
-        self._kneel_down_duration = 1
+        self._kneel_down_speed = 0.1
+        self._kneel_down_trajectory = None
 
-        self._y = 0.015
+        y = 0.015
         self._x_air = 0.13
         self._x_kneel = 0.08
         self._x_stretched = 0.197
+        self._p_air = np.array([0.13, y])
+        self._p_kneel = np.array([0.08, y])
+        self._p_stretched = np.array([0.197, y])
 
     def get_goal_pos(self):
         if self._gcs.on_ground:
-            t = time.clock()
             if not self._last_on_ground:
                 # Just landed. Reset timer.
-                self._t = t
+                self._kneel_down_trajectory = LinearTrajectory(
+                        self._p_air, self._p_kneel, self._kneel_down_speed)
 
-            t = t - self._t
-            if t < self._kneel_down_duration:
-                x = self._x_air - ((self._x_air - self._x_kneel) *
-                        t / self._kneel_down_duration)
-            else:
-                x = self._x_stretched
-
-            goal = np.array([x, self._y])
-
+            goal = self._kneel_down_trajectory.next_step()
+            if goal is None:
+                goal = self._p_stretched
         else:
             # We are the air. Go to landing pose immediately.
-            goal = np.array([self._x_air, self._y])
+            goal = self._p_air
 
         self._last_on_ground = self._gcs.on_ground
         return goal
@@ -86,7 +114,7 @@ if __name__ == "__main__":
     (Kp1, Ki1, Kd1) = (50, 0, 0.15)
     (Kp2, Ki2, Kd2) = (20, 0, 0.1)
     # air
-    (Kp1_a, Ki1_a, Kd1_a) = (15, 0, 0.29)
+    (Kp1_a, Ki1_a, Kd1_a) = (15, 0, 0.32)
     (Kp2_a, Ki2_a, Kd2_a) = (6, 0, 0.23)
 
 
