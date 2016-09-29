@@ -282,6 +282,8 @@ if __name__ == "__main__":
     def on_position_msg(msg):
         global position_ticks
 
+        loop_start = time.clock()
+
         mtr_data.set_position(msg)
 
         position_ticks += 1
@@ -339,7 +341,9 @@ if __name__ == "__main__":
         logger.log_data(foot_pos, mtr_data, foot_goal, goal_mpos)
 
         send_mtr_current(bus, vctrl1.iqref, vctrl2.iqref)
-        print()
+
+        print("loop duration: {:.1f} ms\n".format(
+            (time.clock() - loop_start) * 1000))
 
     msg_handler = MessageHandler()
     msg_handler.set_id_handler(ArbitrationIds.status, mtr_data.set_status)
