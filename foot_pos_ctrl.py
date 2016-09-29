@@ -187,6 +187,45 @@ class GroundContactState:
             self.on_ground = foot_force[0] > 0.7
 
 
+class PositionLogger:
+    time = []
+    foot_pos = []
+    foot_pos_ref = []
+    mtr1_pos = []
+    mtr1_pos_ref = []
+    mtr2_pos = []
+    mtr2_pos_ref = []
+
+    def log_data(self, foot_pos, mtr_data, foot_ref, mtr_ref):
+        self.time.append(mtr_data.mtr1.position.timestamp)
+
+        self.foot_pos.append(np.array(foot_pos))
+        self.foot_pos_ref.append(np.array(foot_ref))
+
+        self.mtr1_pos.append(mtr_data.mtr1.position.value)
+        self.mtr1_pos_ref.append(mtr_ref[0])
+
+        self.mtr2_pos.append(mtr_data.mtr2.position.value)
+        self.mtr2_pos_ref.append(mtr_ref[1])
+
+    def __del__(self):
+        with open("logged_data.txt", "w") as fh:
+            fh.write("# time foot_x foot_y foot_x_ref foot_y_ref mtr1_pos"
+                     " mtr1_pos_ref mtr2_pos mtr2_pos_ref\n")
+            for i in range(len(self.time)):
+                fh.write(" ".join([str(x) for x in [
+                    self.time[i],
+                    self.foot_pos[i][0],
+                    self.foot_pos[i][1],
+                    self.foot_pos_ref[i][0],
+                    self.foot_pos_ref[i][1],
+                    self.mtr1_pos[i],
+                    self.mtr1_pos_ref[i],
+                    self.mtr2_pos[i],
+                    self.mtr2_pos_ref[i]
+                    ]]) + "\n")
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 2 or sys.argv[1] not in ["slider", "jump"]:
         print("Usage: {} slider|jump".format(sys.argv[0]))
@@ -197,6 +236,7 @@ if __name__ == "__main__":
     adc = AdcResult()
     bus = can.interface.Bus(bitrate=BITRATE)
     ground_state = GroundContactState()
+    logger = PositionLogger()
     position_ticks = 0
 
     if sys.argv[1] == "slider":
@@ -280,6 +320,8 @@ if __name__ == "__main__":
         if mtr_data.status.mtr2_ready:
             vctrl2.update_data(mtr_data.mtr2)
             vctrl2.run(goal_mpos[1], verbose=False)
+
+        logger.log_data(foot_pos, mtr_data, foot_goal, goal_mpos)
 
         send_mtr_current(bus, vctrl1.iqref, vctrl2.iqref)
         print()
