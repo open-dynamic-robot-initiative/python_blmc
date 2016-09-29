@@ -294,12 +294,9 @@ if __name__ == "__main__":
         print(mtr_data.to_string())
         #print(adc.to_string())
 
-        current_mpos = np.array([mtr_data.mtr1.position.value,
-                                 mtr_data.mtr2.position.value])
-
         foot_pos = tf.foot_position()
 
-        if not kin.is_pose_safe(current_mpos[0], current_mpos[1], foot_pos):
+        if not tf.is_pose_safe():
             raise RuntimeError("EMERGENCY BREAK")
 
         force = tf.foot_force(
@@ -325,7 +322,7 @@ if __name__ == "__main__":
             foot_goal[0], foot_goal[1]))
 
         #print("(th1, th2) = ({:.3f}, {:.3f}) ~ ({:.3f}, {:.3f})".format(
-        #    current_mpos[0], current_mpos[1], goal_mpos[0], goal_mpos[1]))
+        #    tf.th1, tf.th2, goal_mpos[0], goal_mpos[1]))
 
         pid_gains = position_master.get_pid_gains()
         vctrl1.update_gains(*pid_gains[0])

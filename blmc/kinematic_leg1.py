@@ -5,41 +5,42 @@ import numpy as np
 
 
 class LegProp:
+    """Leg specific properties."""
     joint_1_gear_factor = 3
     joint_2_gear_factor = 3
-
-    l1 = 0.1  # Length of link 1
-    l2 = 0.1  # Length of link 2
 
     motor_1_kt = 0.018
     motor_2_kt = 0.018
 
+    l1 = 0.1  # Length of link 1
+    l2 = 0.1  # Length of link 2
 
-def _motor_positions_to_joint_angles(mpos1, mpos2):
+
+def motor_positions_to_joint_angles(mpos1, mpos2):
     return (mpos1 * 2*np.pi / LegProp.joint_1_gear_factor,
             mpos2 * 2*np.pi / LegProp.joint_2_gear_factor)
 
 
-class Transformer:
+def joint_angles_to_motor_position(th1, th2):
+    return (th1 / (2*np.pi) * LegProp.joint_1_gear_factor,
+            th2 / (2*np.pi) * LegProp.joint_2_gear_factor)
 
-#    def __init__(self):
+
+class Transformer:
+    """Encapsulates all transformations that are based on the current leg
+    configuraiton (i.e. forward kinematics).
+    """
 
     def update_mtr_data(self, mtr_data):
-        (self.th1, self.th2) = _motor_positions_to_joint_angles(
+        """Update internal motor data.
+
+        This has to be done *before* any of the other methods is called!
+        """
+        self._mtr_data = mtr_data
+        self._foot_pos = None
+        (self.th1, self.th2) = motor_positions_to_joint_angles(
                 mtr_data.mtr1.position.value,
                 mtr_data.mtr2.position.value)
-
-    def foot_position(self):
-        """Compute foot position in base frame.
-
-        Returns
-        =======
-        foot_0 : (float, float)
-            (x,y)-position of the foot in the base frame.
-        """
-        foot_2 = np.array([0, 0, 1])
-        foot_0 = self.tf01().dot(self.tf12().dot(foot_2))
-        return foot_0[:2]
 
     def tf01(self):
         """Get transformation matrix from base (0) to knee (1).
@@ -68,6 +69,32 @@ class Transformer:
         return np.array([[Cth, -Sth, LegProp.l2 * Cth],
                          [Sth,  Cth, LegProp.l2 * Sth],
                          [  0,    0,                1]])
+
+    def foot_position(self):
+        """Compute foot position in base frame.
+
+        Returns
+        =======
+        foot_pos : (float, float)
+            (x,y)-position of the foot in the base frame.
+        """
+        if self._foot_pos is None:
+            self._foot_pos = self.tf01().dot(self.tf12().dot(
+                np.array([0, 0, 1])))[:2]
+        return self._foot_pos
+
+    def is_pose_safe(self):
+        """Check if the given configuration is safe.
+
+        Returns
+        =======
+        is_safe : bool
+            True if the pose is safe, False if not.
+        """
+        return ((abs(self._mtr_data.mtr1.position.value) < 1.2)
+                and (abs(self._mtr_data.mtr2.position.value) < 1.35)
+                and (self._foot_pos[0] > -0.1)
+                and (self._foot_pos[0] > 0 or abs(self._foot_pos[1]) > 0.04))
 
     def transform_optoforce_to_base(self, force_s):
         """Transfrom force vector from OptoForce frame to foot frame.
@@ -127,60 +154,25 @@ class Transformer:
         return np.array((fx, fy))
 
 
-
-
-
-
-
-def tf01(th1):
-    """Get transformation matrix from base (0) to knee (1).
-
-    Parameter
-    =========
-    th1 : float
-        Angular position of joint 1 (hip) in radian.
-    """
-    Cth = np.cos(th1)
-    Sth = np.sin(th1)
-    return np.matrix([[Cth,  Sth, LegProp.l1 * Cth],
-                      [Sth, -Cth, LegProp.l1 * Sth],
-                      [  0,    0,                1]])
-
-
-def tf12(th2):
-    """Get transformation matrix from knee (1) to foot (2).
-
-    Parameter
-    =========
-    th2 : float
-        Angular position of joint 2 (knee) in radian.
-    """
-    Cth = np.cos(th2)
-    Sth = np.sin(th2)
-    return np.matrix([[Cth, -Sth, LegProp.l2 * Cth],
-                      [Sth,  Cth, LegProp.l2 * Sth],
-                      [  0,    0,                1]])
-
-
-def transform_optoforce_to_foot(force_s):
-    """Transfrom force vector from OptoForce frame to foot frame.
-
-    Parameter
-    =========
-    force_s : array
-        Force vector in sensor frame.
-
-    Returns
-    =======
-    force_f : array
-        Force vector in foot frame.
-    """
-    oost = 1. / np.sqrt(2)
-    R = np.array([[0, -oost,  oost],
-                  [0, -oost, -oost],
-                  [1,     0,     0]])
-    force_f = R.dot(force_s)
-    return force_f
+#def transform_optoforce_to_foot(force_s):
+#    """Transfrom force vector from OptoForce frame to foot frame.
+#
+#    Parameter
+#    =========
+#    force_s : array
+#        Force vector in sensor frame.
+#
+#    Returns
+#    =======
+#    force_f : array
+#        Force vector in foot frame.
+#    """
+#    oost = 1. / np.sqrt(2)
+#    R = np.array([[0, -oost,  oost],
+#                  [0, -oost, -oost],
+#                  [1,     0,     0]])
+#    force_f = R.dot(force_s)
+#    return force_f
 
 
 def inverse_kinematics(x, y):
@@ -222,60 +214,4 @@ def inverse_kinematics(x, y):
 
 def inverse_kinematics_mrev(x, y):
     (th1, th2) = inverse_kinematics(x, y)
-    return (rad_to_mrev(th1) * LegProp.joint_1_gear_factor,
-            rad_to_mrev(th2) * LegProp.joint_2_gear_factor)
-
-
-def mrev_to_rad(mrev):
-    """Convert mrev to radian."""
-    return mrev * 2*np.pi
-
-
-def rad_to_mrev(rad):
-    """Convert radian to mrev."""
-    return rad / (2*np.pi)
-
-
-def foot_position(mpos1, mpos2):
-    """Compute foot position in base frame.
-
-    Parameter
-    =========
-    mpos1 : float
-        Angular position of motor 1 in mrev.
-    mpos2 : float
-        Angular position of motor 2 in mrev.
-
-    Returns
-    =======
-    foot_0 : (float, float)
-        (x,y)-position of the foot in the base frame.
-    """
-    th1 = mrev_to_rad(mpos1) / LegProp.joint_1_gear_factor
-    th2 = mrev_to_rad(mpos2) / LegProp.joint_2_gear_factor
-    foot_2 = np.matrix([0, 0, 1]).transpose()
-    foot_0 = tf01(th1) * tf12(th2) * foot_2
-    foot_0 = np.asarray(foot_0.transpose())[0, :2]
-
-    return foot_0
-
-
-def is_pose_safe(mpos1, mpos2, foot_0):
-    """Check if the given configuration is safe.
-
-    Parameter
-    =========
-    mpos1 : float
-        Angular position of motor 1 in mrev.
-    mpos2 : float
-        Angular position of motor 2 in mrev.
-    foot_0 : (float, float)
-        Position of the foot in base frame.
-
-    Returns
-    =======
-    is_safe : bool
-        True if the pose is safe, False if not.
-    """
-    return ((abs(mpos1) < 1.2) and (abs(mpos2) < 1.35)
-        and (foot_0[0] > -0.1) and (foot_0[0] > 0 or abs(foot_0[1]) > 0.04))
+    return joint_angles_to_motor_position(th1, th2)
