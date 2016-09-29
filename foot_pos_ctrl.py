@@ -118,17 +118,17 @@ class JumpTrajectory(PositionMaster):
         self._kneel_down_traj = None
         self._start_traj = None
 
-        self._kneel_down_speed = 0.1
-        y = 0.015
+        self._kneel_down_speed = 0.05
+        y = 0.02
         self._p_air = np.array([0.13, y])
-        self._p_kneel = np.array([0.08, y])
+        self._p_kneel = np.array([0.07, y])
         self._p_stretched = np.array([0.197, y])
 
     def get_goal_pos(self, current_pos):
         if self._state == State.START_UP:
             return self._do_start_up(current_pos)
         elif self._state == State.AIR:
-            return self._do_air()
+            return self._do_air(current_pos)
         else: # state == GROUND
             return self._do_ground()
 
@@ -136,7 +136,7 @@ class JumpTrajectory(PositionMaster):
         if self._state == State.START_UP:
             return ((30, 0, 0.15), (15, 0, 0.1))
         elif self._state == State.AIR:
-            return ((15, 0, 0.28), (6, 0, 0.23))
+            return ((15, 0, 0.3), (6, 0, 0.23))
         else: # state == GROUND
             return ((50, 0, 0.15), (20, 0, 0.1))
 
@@ -151,13 +151,17 @@ class JumpTrajectory(PositionMaster):
             self._state = State.AIR
         return goal
 
-    def _do_air(self):
+    def _do_air(self, current_pos):
         print("~~~ AIR ~~~")
         if self._gcs.on_ground:
             self._state = State.GROUND
             # Just landed. Set new kneel trajectory
+            # Adjust y value
+            start = np.array([self._p_air[0], current_pos[1]])
+            self._p_kneel[1] = current_pos[1]
+            self._p_stretched[1] = current_pos[1]
             self._kneel_down_traj = LinearTrajectory(
-                    self._p_air, self._p_kneel, self._kneel_down_speed)
+                    start, self._p_kneel, self._kneel_down_speed)
 
         return self._p_air
 
