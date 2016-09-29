@@ -181,7 +181,10 @@ class GroundContactState:
         self.on_ground = False  # assume we start in mid-air
 
     def update_state(self, foot_force):
-        self.on_ground = foot_force[0] > 0.7
+        if self.on_ground:
+            self.on_ground = foot_force[0] > 0.4
+        else:
+            self.on_ground = foot_force[0] > 0.7
 
 
 if __name__ == "__main__":
