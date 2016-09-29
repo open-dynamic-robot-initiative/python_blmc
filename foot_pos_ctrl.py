@@ -14,6 +14,7 @@ from blmc.conversion import *
 from blmc.controllers import PositionController
 from blmc.can_helper import *
 import blmc.kinematic_leg1 as kin
+import blmc.optoforce as of
 
 BITRATE = 1e6
 
@@ -234,6 +235,7 @@ if __name__ == "__main__":
 
     mtr_data = MotorData()
     adc = AdcResult()
+    optoforce = of.OptoForcePacketReceiver()
     bus = can.interface.Bus(bitrate=BITRATE)
     ground_state = GroundContactState()
     logger = PositionLogger()
@@ -261,6 +263,13 @@ if __name__ == "__main__":
     vctrl1 = PositionController(*pid_gains[0])
     vctrl2 = PositionController(*pid_gains[1])
 
+    #print("Initialize OptoForce...")
+    ofconf = of.OptoForceConfig()
+    ofconf.zero()
+    ofconf.set_sample_frequency(
+           of.OptoForceConfig.SampleFreq.Hz_1000)
+    ofconf.send_via_can(bus, ArbitrationIds.optoforce_recv)
+
     start_system(bus, mtr_data)
 
     raw_input("Press Enter to start foot position control")
@@ -279,7 +288,7 @@ if __name__ == "__main__":
             return
         position_ticks = 0
 
-        #print(mtr_data.to_string())
+        print(mtr_data.to_string())
         #print(adc.to_string())
 
         current_mpos = np.array([mtr_data.mtr1.position.value,
@@ -293,7 +302,13 @@ if __name__ == "__main__":
         force = kin.foot_force(
                 mtr_data.mtr1.position.value, mtr_data.mtr2.position.value,
                 mtr_data.mtr1.current.value, mtr_data.mtr2.current.value)
-        #print("force: {}".format(force))
+        print("force (motor): {}".format(force))
+        if optoforce.data:
+            of_force_s = np.array([optoforce.data.fx_N,
+                                   optoforce.data.fy_N,
+                                   optoforce.data.fz_N])
+            of_force_f = kin.transform_optoforce(of_force_s)
+            print("force (opto):  {}".format(of_force_f[:2]))
         ground_state.update_state(force)
 
         foot_goal = position_master.get_goal_pos(foot_pos)
@@ -332,6 +347,8 @@ if __name__ == "__main__":
     msg_handler.set_id_handler(ArbitrationIds.position, on_position_msg)
     msg_handler.set_id_handler(ArbitrationIds.velocity, mtr_data.set_velocity)
     msg_handler.set_id_handler(ArbitrationIds.adc6, adc.set_values)
+    msg_handler.set_id_handler(ArbitrationIds.optoforce_trans,
+            lambda msg: optoforce.receive_frame(msg.data))
 
 
     # wait for messages and update data

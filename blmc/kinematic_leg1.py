@@ -45,6 +45,27 @@ def tf12(th2):
                       [  0,    0,                1]])
 
 
+def transform_optoforce(force_s):
+    """Transfrom force vector from OptoForce frame to foot frame.
+
+    Parameter
+    =========
+    force_s : array
+        Force vector in sensor frame.
+
+    Returns
+    =======
+    force_f : array
+        Force vector in foot frame.
+    """
+    oost = 1. / np.sqrt(2)
+    R = np.array([[0, -oost,  oost],
+                  [0, -oost, -oost],
+                  [1,     0,     0]])
+    force_f = R.dot(force_s)
+    return force_f
+
+
 def inverse_kinematics(x, y):
     """Compute joint angles for given foot position.
 

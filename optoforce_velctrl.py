@@ -18,15 +18,6 @@ from blmc.controllers import VelocityController
 BITRATE = 1e6
 
 
-def handle_optoforce_package(data):
-    pkt = OptoForceDataPacket31()
-    try:
-        pkt.set_packet_bytes(data)
-        return pkt.fz
-    except ValueError, e:
-        print("Error: {}".format(e))
-
-
 if __name__ == "__main__":
     if len(sys.argv) != 4:
         print("Usage: {} goal_speed Kp Ki".format(sys.argv[0]))
@@ -91,9 +82,10 @@ if __name__ == "__main__":
     def on_optoforce_msg(msg):
         global optospeed
 
-        ofpkt = of_packet_receiver.receive_frame(msg.data)
-        if ofpkt is not None:
-            optospeed = float(max(0, ofpkt.fz)) / optofullscale * goal_speed
+        of_packet_receiver.receive_frame(msg.data)
+        if of_packet_receiver.data is not None:
+            fz = of_packet_receiver.data.fz
+            optospeed = float(max(0, fz)) / optofullscale * goal_speed
 
     msg_handler = MessageHandler()
     msg_handler.set_id_handler(ArbitrationIds.status, mtr_data.set_status)
