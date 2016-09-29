@@ -235,6 +235,7 @@ if __name__ == "__main__":
 
     mtr_data = MotorData()
     adc = AdcResult()
+    tf = kin.Transformer()
     optoforce = of.OptoForcePacketReceiver()
     bus = can.interface.Bus(bitrate=BITRATE)
     ground_state = GroundContactState()
@@ -267,7 +268,7 @@ if __name__ == "__main__":
     ofconf = of.OptoForceConfig()
     ofconf.zero()
     ofconf.set_sample_frequency(
-           of.OptoForceConfig.SampleFreq.Hz_1000)
+           of.OptoForceConfig.SampleFreq.Hz_10)
     ofconf.send_via_can(bus, ArbitrationIds.optoforce_recv)
 
     start_system(bus, mtr_data)
@@ -288,27 +289,29 @@ if __name__ == "__main__":
             return
         position_ticks = 0
 
+        tf.update_mtr_data(mtr_data)
+
         print(mtr_data.to_string())
         #print(adc.to_string())
 
         current_mpos = np.array([mtr_data.mtr1.position.value,
                                  mtr_data.mtr2.position.value])
 
-        foot_pos = kin.foot_position(current_mpos[0], current_mpos[1])
+        foot_pos = tf.foot_position()
 
         if not kin.is_pose_safe(current_mpos[0], current_mpos[1], foot_pos):
             raise RuntimeError("EMERGENCY BREAK")
 
-        force = kin.foot_force(
-                mtr_data.mtr1.position.value, mtr_data.mtr2.position.value,
+        force = tf.foot_force(
                 mtr_data.mtr1.current.value, mtr_data.mtr2.current.value)
         print("force (motor): {}".format(force))
         if optoforce.data:
             of_force_s = np.array([optoforce.data.fx_N,
                                    optoforce.data.fy_N,
                                    optoforce.data.fz_N])
-            of_force_f = kin.transform_optoforce(of_force_s)
-            print("force (opto):  {}".format(of_force_f[:2]))
+            of_force_f = tf.transform_optoforce_to_base(of_force_s)
+            #print("force (opto s):  {}".format(of_force_s))
+            print("force (opto f):  {}".format(of_force_f[:2]))
         ground_state.update_state(force)
 
         foot_goal = position_master.get_goal_pos(foot_pos)
