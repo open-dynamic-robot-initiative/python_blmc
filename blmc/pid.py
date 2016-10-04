@@ -8,8 +8,6 @@
 # http://examples.oreilly.com/9780596809577/CH09/PID.py
 #-------------------------------------------------------------------------------
 
-import time
-
 
 class PID:
     """ Simple PID control.
@@ -62,7 +60,7 @@ class PID:
             (the error parameter).
         """
         if time is None:
-            self.currtm = time.clock()               # get t
+            self.currtm = get_time()               # get t
         else:
             self.currtm = time
 

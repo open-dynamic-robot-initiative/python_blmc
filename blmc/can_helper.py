@@ -2,9 +2,9 @@
 Some simple helper functions for sending CAN messages.
 """
 import can
-import time
 from .conversion import value_to_q_bytes
 from .motor_data import ArbitrationIds, init_position_offset
+from .helper import get_time
 
 
 # TODO: this should be in motor_data ?!
@@ -58,10 +58,10 @@ def update_position(bus, mtr_data, wait_period):
     motor positions.  This is necessary as it seems that the python can module
     latches some old, outdated messages.
     """
-    start = time.clock()
+    start = get_time()
     for msg in bus:
         if msg.arbitration_id == ArbitrationIds.position:
-            if start < time.clock() - wait_period:
+            if start < get_time() - wait_period:
                 mtr_data.set_position(msg)
                 return
 

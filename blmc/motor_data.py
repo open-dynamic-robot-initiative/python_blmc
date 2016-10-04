@@ -1,9 +1,9 @@
 """
 Helper classes to interpret data send by the board
 """
-import time
 import cPickle as pickle
 from .conversion import *
+from .helper import get_time
 
 
 class ArbitrationIds:
@@ -176,10 +176,10 @@ def init_position_offset(bus, mtr_data, calibration_file="calibration_data.p"):
 
     raw_input("Move both joints in positive direction until stop."
               " Then press enter")
-    start = time.clock()
+    start = get_time()
     for msg in bus:
         if msg.arbitration_id == ArbitrationIds.position:
-            if start < time.clock() - 1:
+            if start < get_time() - 1:
                 mtr_data.set_position(msg)
                 zero_offsets = (mtr_data.mtr1.position.value - stop_offsets[0],
                                 mtr_data.mtr2.position.value - stop_offsets[1])
