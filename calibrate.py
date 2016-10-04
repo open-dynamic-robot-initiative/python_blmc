@@ -3,11 +3,11 @@ Calibrate the stop offsets for position initialization.
 """
 from __future__ import print_function
 import can
-import time
 import numpy as np
 import cPickle as pickle
 import blmc.motor_data as md
 import blmc.can_helper as ch
+from blmc.helper import get_time
 
 
 BITRATE = 1e6
@@ -24,10 +24,10 @@ if __name__ == "__main__":
 
     raw_input("Move both joints in positive direction until stop."
               " Then press enter.")
-    start = time.clock()
+    start = get_time()
     for msg in bus:
         if msg.arbitration_id == md.ArbitrationIds.position:
-            if start < time.clock() - 1:
+            if start < get_time() - 1:
                 mtr_data.set_position(msg)
                 stop_position = (mtr_data.mtr1.position.value,
                                  mtr_data.mtr2.position.value)
@@ -36,10 +36,10 @@ if __name__ == "__main__":
 
     raw_input("Now move the leg to the zero position (fully stretched,"
               " poiting downwards). Then press enter.")
-    start = time.clock()
+    start = get_time()
     for msg in bus:
         if msg.arbitration_id == md.ArbitrationIds.position:
-            if start < time.clock() - 1:
+            if start < get_time() - 1:
                 mtr_data.set_position(msg)
                 zero_offsets = (mtr_data.mtr1.position.value,
                                 mtr_data.mtr2.position.value)

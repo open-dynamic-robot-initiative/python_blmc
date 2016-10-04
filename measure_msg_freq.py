@@ -4,9 +4,9 @@ Measure the frequency of messages with the specified arbitration id.
 from __future__ import print_function
 import sys
 import can
-import time
 import numpy as np
 import blmc.can_helper as ch
+from blmc.helper import get_time
 
 
 BITRATE = 1e6
@@ -30,7 +30,7 @@ if __name__ == "__main__":
     # wait for messages and update data
     for msg in bus:
         #canhndlr.handle_msg(msg.arbitration_id, msg.data)
-        t = time.clock()
+        t = get_time()
         if msg.arbitration_id == arb_id:
             #stemps.append(t)
             stemps.append(msg.timestamp)

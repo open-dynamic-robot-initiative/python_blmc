@@ -3,7 +3,6 @@ Controll the position of the foot, using sliders for x and y.
 """
 from __future__ import print_function
 import os
-import time
 import can
 import signal
 import sys
@@ -13,6 +12,7 @@ from blmc.motor_data import *
 from blmc.conversion import *
 from blmc.controllers import PositionController
 from blmc.can_helper import *
+from blmc.helper import get_time
 import blmc.kinematic_leg1 as kin
 import blmc.optoforce as of
 
@@ -45,7 +45,7 @@ class LinearTrajectory:
 
     def next_step(self):
         """Get the next step of the trajectory or None if goal is reached."""
-        t = time.clock()
+        t = get_time()
         if self._t_start is None:
             self._t_start = t
         t -= self._t_start
@@ -282,7 +282,7 @@ if __name__ == "__main__":
     def on_position_msg(msg):
         global position_ticks
 
-        loop_start = time.clock()
+        loop_start = get_time()
 
         mtr_data.set_position(msg)
 
@@ -343,7 +343,7 @@ if __name__ == "__main__":
         send_mtr_current(bus, vctrl1.iqref, vctrl2.iqref)
 
         print("loop duration: {:.1f} ms\n".format(
-            (time.clock() - loop_start) * 1000))
+            (get_time() - loop_start) * 1000))
 
     msg_handler = MessageHandler()
     msg_handler.set_id_handler(ArbitrationIds.status, mtr_data.set_status)

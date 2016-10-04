@@ -3,7 +3,6 @@ Small working example on how to access CAN bus.
 """
 from __future__ import print_function
 import os
-import time
 import can
 import signal
 import sys
@@ -14,6 +13,7 @@ from blmc.motor_data import *
 from blmc.conversion import *
 from blmc.controllers import PositionController
 from blmc.can_helper import *
+from blmc.helper import get_time
 
 BITRATE = 1e6
 
@@ -102,7 +102,7 @@ if __name__ == "__main__":
         print(mtr_data.to_string())
         #print(adc.to_string())
 
-        t = time.clock()
+        t = get_time()
         if t_offset is None:
             t_offset = t
             # TODO check if position is close to zero at start

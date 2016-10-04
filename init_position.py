@@ -6,6 +6,7 @@ import can
 import time
 import blmc.motor_data as md
 import blmc.can_helper as ch
+from blmc.helper import get_time
 
 
 BITRATE = 1e6
@@ -25,7 +26,7 @@ if __name__ == "__main__":
 
     # Print position data to validate initialization
     for msg in bus:
-        t = time.clock()
+        t = get_time()
         if msg.arbitration_id == md.ArbitrationIds.position:
             mtr_data.set_position(msg)
 
