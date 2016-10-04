@@ -20,7 +20,8 @@ def handle_package(data):
     pkt = OptoForceDataPacket31()
     try:
         pkt.set_packet_bytes(data)
-        print(pkt.to_string())
+        total = (pkt.fx_N**2 + pkt.fy_N**2 + pkt.fz_N**2) ** (0.5)
+        print("{}, total: {:.2f}".format(pkt.to_string(), total))
     except ValueError, e:
         print("Error: {}".format(e))
 
