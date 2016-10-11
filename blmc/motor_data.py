@@ -109,9 +109,7 @@ class Status:
     mtr1_ready = 0
     mtr2_enabled = 0
     mtr2_ready = 0
-    mtr1_overheat = 0
-    mtr2_overheat = 0
-    system_error = 0
+    error = 0
     timestamp = 0
 
     def set_status(self, msg):
@@ -122,14 +120,13 @@ class Status:
         self.mtr1_ready = status_code & (1 << 2)
         self.mtr2_enabled = status_code & (1 << 3)
         self.mtr2_ready = status_code & (1 << 4)
-        self.mtr1_overheat = status_code & (1 << 5)
-        self.mtr2_overheat = status_code & (1 << 6)
-        self.system_error = status_code & (1 << 7)
+        self.error = status_code >> 5
 
     def to_string(self):
         str_sys = "SYS: "
         str_sys += "E" if self.system_enabled else "D"
-        str_sys += "!!!" if self.system_error else ""
+        if self.error:
+            str_sys += "!ERR[{}]".format(self.error)
 
         str_mtr1 = "MTR1: "
         str_mtr1 += "E" if self.mtr1_enabled else "D"
