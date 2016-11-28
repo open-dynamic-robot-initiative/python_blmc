@@ -1,5 +1,12 @@
+#!/usr/bin/env python
 """
 Measure the frequency of messages with the specified arbitration id.
+
+Records messages with the given arbitration id for one second, then computes
+average period between messages as well as standard deviation and min/max
+values.
+
+Can be used to evaluate the CAN connection.
 """
 from __future__ import print_function
 import sys
@@ -29,14 +36,12 @@ if __name__ == "__main__":
 
     # wait for messages and update data
     for msg in bus:
-        #canhndlr.handle_msg(msg.arbitration_id, msg.data)
         t = get_time()
         if msg.arbitration_id == arb_id:
-            #stemps.append(t)
             stemps.append(msg.timestamp)
 
         if last_print < t - 1:
-            if len(stemps) == 0:
+            if len(stemps) < 2:
                 print("No messages")
                 continue
 

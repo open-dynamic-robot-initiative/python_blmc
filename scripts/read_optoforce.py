@@ -1,5 +1,6 @@
+#!/usr/bin/env python
 """
-Small working example on how to access CAN bus.
+Example on how the get data from the OptoForce sensor via CAN.
 """
 from __future__ import print_function
 import os
@@ -38,7 +39,7 @@ if __name__ == "__main__":
     #ofconf.unzero()
     #ofconf.send_via_can(bus, ArbitrationIds.optoforce_recv)
 
-    # new rezero and set desirec frequency
+    # new rezero and set desired frequency
     ofconf.zero()
     ofconf.set_sample_frequency(
            OptoForceConfig.SampleFreq.Hz_10)

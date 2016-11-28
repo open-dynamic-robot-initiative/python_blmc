@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Small working example on how to access CAN bus.
 """
@@ -52,7 +53,8 @@ if __name__ == "__main__":
 
     start_system(bus, mtr_data)
 
-    raw_input("Press Enter to start joint position control")
+    raw_input("Move both sliders to zero. Then press Enter to start motor"
+              " position control")
 
     # Make sure we have the latest position data
     update_position(bus, mtr_data, 0.5)

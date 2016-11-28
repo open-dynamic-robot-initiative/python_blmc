@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>python-blmc</name>
+  <version>1.0.0</version>
+  <description>
+    The `blmc` package contains an API for the CAN interface of the
+    motor control microcontroller of the Brushless Motor Control Project as
+    well as the OptoForce sensor.
+
+    The scripts use this API for several tasks like evaluating the CAN
+    interface, displaying motor parameters or running simple velocity/position
+    controllers.
+
+    This only works with the *dual_motor_torque_ctrl* code running on the
+    board.
+  </description>
+
+  <license>TODO</license>
+
+  <author email="fwidmaier@tue.mpg.de">Felix Widmaier</author>
+  <maintainer email="fwidmaier@tue.mpg.de">Felix Widmaier</maintainer>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <!-- depends on the python-can package that is not in the repositories -->
+
+</package>

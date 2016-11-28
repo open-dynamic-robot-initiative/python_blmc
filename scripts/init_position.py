@@ -1,5 +1,9 @@
+#!/usr/bin/env python
 """
 Demo on how to initialize the zero position at start up.
+
+Runs the position initialization procedure and starts to print joint positions
+when done.
 """
 from __future__ import print_function
 import can

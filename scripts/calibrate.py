@@ -1,5 +1,8 @@
+#!/usr/bin/env python
 """
 Calibrate the stop offsets for position initialization.
+
+The result is written to the file `calibration_data.p`.
 """
 from __future__ import print_function
 import can

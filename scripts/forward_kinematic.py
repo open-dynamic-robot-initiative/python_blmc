@@ -1,5 +1,12 @@
+#!/usr/bin/env python
 """
 Compute forward kinematic and print foot coordinates.
+
+First the joint positions are initialized, then the script starts to print
+ * joint positions from board
+ * foot position by computing forward kinematics
+ * joint positions from inverse kinematics (based on foot position)
+ * Whether or not the current pose is safe (= inside the allowed working range)
 """
 from __future__ import print_function
 import sys
@@ -25,7 +32,6 @@ if __name__ == "__main__":
 
     # wait for messages and update data
     for msg in bus:
-        #canhndlr.handle_msg(msg.arbitration_id, msg.data)
         t = get_time()
         if msg.arbitration_id == md.ArbitrationIds.position:
             mtr_data.set_position(msg)
@@ -44,5 +50,5 @@ if __name__ == "__main__":
                 if tf.is_pose_safe():
                     print("Pose is safe.")
                 else:
-                    print("DANGER!")
+                    print("Pose is UNSAFE!")
                 last_print = t

@@ -1,5 +1,31 @@
+#!/usr/bin/env python
 """
-Controll the position of the foot, using sliders for x and y.
+Control the position of the foot.  There are two modes: "slider" and "jump".
+
+
+Slider
+------
+
+When called with the argument "slider", the position of the foot can be
+controlled via sliders.
+
+The sliders have to be connected to the ADCs A6 and B6 of the board.  The
+A-slider sets the vertical position of the foot, the B-slider the horizontal.
+For the initial position (leg fully streched) set the A-slider to 0 and the
+B-slider to half of its range.
+
+
+Jump
+----
+
+When called with the argument "jump", the foot will move to a slightly crouched
+position.  As soon as it touches the ground, the leg will slowly crouch down
+and then immediately straighten the leg to jump.  This is repeated over and
+over again.
+
+Note that in this mode touchdown detection is done based on motor torques and
+different gains for the PD controller are used depending on if the leg touches
+the ground or not.
 """
 from __future__ import print_function
 import os
@@ -286,6 +312,7 @@ if __name__ == "__main__":
 
         mtr_data.set_position(msg)
 
+        # reduce frequency of the controller (only run every second time)
         position_ticks += 1
         if position_ticks < 2:
             return
@@ -351,8 +378,11 @@ if __name__ == "__main__":
     msg_handler.set_id_handler(ArbitrationIds.position, on_position_msg)
     msg_handler.set_id_handler(ArbitrationIds.velocity, mtr_data.set_velocity)
     msg_handler.set_id_handler(ArbitrationIds.adc6, adc.set_values)
-    msg_handler.set_id_handler(ArbitrationIds.optoforce_trans,
-            lambda msg: optoforce.receive_frame(msg.data))
+
+    # Don't process OptoForce messages. We don't need them here and the
+    # computation is too expensive for the controller.
+    #msg_handler.set_id_handler(ArbitrationIds.optoforce_trans,
+    #        lambda msg: optoforce.receive_frame(msg.data))
 
 
     # wait for messages and update data

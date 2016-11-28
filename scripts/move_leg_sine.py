@@ -1,5 +1,9 @@
+#!/usr/bin/env python
 """
-Small working example on how to access CAN bus.
+Move the leg joints based on sine curves.
+
+This is a simple example on how to run a position controller on the leg, where
+the position reference of each joint is given by a sine function.
 """
 from __future__ import print_function
 import os
@@ -19,6 +23,19 @@ BITRATE = 1e6
 
 
 def get_position_reference(t):
+    """
+    Compute position reference for both motors based on sine function.
+
+    Parameter
+    ---------
+    t : float
+        Current time.
+
+    Returns
+    -------
+    (pos1, pos2) : (float, float)
+        Position reference values for both motors.
+    """
     # range of motor 1: +/- 1.0
     # range of motor 2: +/- 1.1
     # start both at 0 and run with same frequency (i.e. they always are at zero

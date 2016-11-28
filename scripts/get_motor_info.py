@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Small working example on how to access CAN bus.
 """
