@@ -1,4 +1,9 @@
 #!/usr/bin/env python
+"""
+Plot data dumps from leg_foot_pos_ctrl.py.
+
+The filename can be given as argument. Default is "logged_data.txt".
+"""
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
