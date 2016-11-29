@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 """
-Small working example on how to access CAN bus.
+Small working example for a position controller
+
+Use sliders on ADC A6 and B6 to set the position reference for the two motors.
 """
 from __future__ import print_function
 import os
@@ -20,7 +22,7 @@ BITRATE = 1e6
 
 if __name__ == "__main__":
     if len(sys.argv) != 8:
-        print("Usage: {} goal_pos Kp1 Ki1 Kd1 Kp2 Ki2 Kd2".format(sys.argv[0]))
+        print("Usage: {} max_pos Kp1 Ki1 Kd1 Kp2 Ki2 Kd2".format(sys.argv[0]))
         sys.exit(1)
 
     goal_pos = float(sys.argv[1])
@@ -51,7 +53,7 @@ if __name__ == "__main__":
     vctrl1 = PositionController(Kp1, Ki1, Kd1)
     vctrl2 = PositionController(Kp2, Ki2, Kd2)
 
-    start_system(bus, mtr_data)
+    start_system(bus, mtr_data, init_position=False)
 
     raw_input("Move both sliders to zero. Then press Enter to start motor"
               " position control")
@@ -64,10 +66,6 @@ if __name__ == "__main__":
 
         print(mtr_data.to_string())
         print(adc.to_string())
-
-        if ((abs(mtr_data.mtr1.position.value) > 1.1)
-                or (abs(mtr_data.mtr2.position.value) > 1.1)):
-            raise RuntimeError("EMERGENCY BREAK")
 
         if mtr_data.status.mtr1_ready:
             vctrl1.update_data(mtr_data.mtr1)
