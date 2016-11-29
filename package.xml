@@ -21,7 +21,6 @@
   <maintainer email="fwidmaier@tue.mpg.de">Felix Widmaier</maintainer>
 
   <buildtool_depend>catkin</buildtool_depend>
-
-  <!-- depends on the python-can package that is not in the repositories -->
+  <run_depend>python-can</run_depend>
 
 </package>
