@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>python-blmc</name>
+  <name>python_blmc</name>
   <version>1.0.0</version>
   <description>
     The `blmc` package contains an API for the CAN interface of the
