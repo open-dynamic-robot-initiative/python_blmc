@@ -15,10 +15,10 @@
     board.
   </description>
 
-  <license>TODO</license>
+  <license>BSD 3-clause</license>
 
-  <author email="fwidmaier@tue.mpg.de">Felix Widmaier</author>
-  <maintainer email="fwidmaier@tue.mpg.de">Felix Widmaier</maintainer>
+  <author email="felix.widmaier@tue.mpg.de">Felix Widmaier</author>
+  <maintainer email="felix.widmaier@tue.mpg.de">Felix Widmaier</maintainer>
 
   <buildtool_depend>catkin</buildtool_depend>
   <run_depend>python-can</run_depend>
