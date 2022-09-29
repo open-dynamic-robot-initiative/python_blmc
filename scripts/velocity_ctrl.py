@@ -81,18 +81,23 @@ if __name__ == "__main__":
     # wait a second for the initial messages to be handled
     time.sleep(0.2)
 
+    log_data = []
+
     def on_velocity_msg(msg):
         mtr_data.set_velocity(msg)
 
+        log_data.append(mtr_data.mtr1.velocity.value)
+
         # emergency break
-        if mtr_data.mtr1.velocity.value > goal_speed * 3:
-            send_msg(bus, msg_disable_system)
-            print("Too fast! EMERGENCY BREAK!")
-            sys.exit(0)
+        # if mtr_data.mtr1.velocity.value > goal_speed * 3:
+        #     send_msg(bus, msg_disable_system)
+        #     print("Too fast! EMERGENCY BREAK!")
+        #     sys.exit(0)
 
         if mtr_data.status.mtr1_ready:
             vctrl.update_data(mtr_data.mtr1)
-            vctrl.run(goal_speed * adc.a)
+            # vctrl.run(goal_speed * adc.a)
+            vctrl.run(goal_speed)
 
             send_mtr_current(bus, vctrl.iqref, 0)
         else:
@@ -106,6 +111,8 @@ if __name__ == "__main__":
     msg_handler.set_id_handler(ArbitrationIds.velocity, on_velocity_msg)
     msg_handler.set_id_handler(ArbitrationIds.adc6, adc.set_values)
 
+    start = time.time()
+
     # wait for messages and update data
     for msg in bus:
         try:
@@ -115,3 +122,13 @@ if __name__ == "__main__":
             print(traceback.format_exc())
             send_msg(bus, msg_disable_system)
             break
+
+        if time.time() > start + 15:
+            send_msg(bus, msg_disable_system)
+            break
+
+    # plot logged data
+    import matplotlib.pyplot as plt
+    plt.axhline(y=goal_speed, color='r', linestyle='-')
+    plt.plot(log_data)
+    plt.show()
