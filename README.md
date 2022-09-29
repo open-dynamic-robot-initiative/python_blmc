@@ -20,9 +20,9 @@ The scripts in the `scripts` directory use this API for several tasks like
 evaluating the CAN interface, displaying motor parameters or running simple
 velocity/position controllers.
 
-This assumes that the
-[mw_dual_motor_torque_ctrl](https://github.com/open-dynamic-robot-initiative/mw_dual_motor_torque_ctrl)
-firmware is running on the board.
+This assumes that the CAN-firmware from
+[udriver_firmware](https://github.com/open-dynamic-robot-initiative/udriver_firmware)
+is running on the board.
 
 
 Requirements
@@ -38,14 +38,20 @@ Requirements
 Installation
 ============
 
-1. Make sure python-can is installed and set up correctly (see documentation
-   there).
-    * The CAN interface and channel have to be set in the configuration file,
-      see [python-can documentation](https://python-can.readthedocs.io/en/master/configuration.html)
+Install from source using pip:
+```
+git clone https://github.com/open-dynamic-robot-initiative/python_blmc.git
+cd python_blmc
+pip install .
+```
+
+Further steps:
+
+1. You need to set up a configuration file for python-can to specify which
+   driver/prot to use. See the [python-can documentation](https://python-can.readthedocs.io/en/master/configuration.html)
 2. Some of the demo scripts need a prior calibration the offset between zero and
    stop position of the leg. Run the script `calibrate.py` (see below) to do
    this.
-3. That's it. Simply launch the script you want to run.
 
 
 About the Scripts
@@ -77,8 +83,3 @@ script and follow its instructions. The result is written to the file
 A demo of how the initialization is done in the code is found in
 `leg_init_position.py`. This script can also be used to verify that the
 calibration is correct.
-
-
-
-
-
