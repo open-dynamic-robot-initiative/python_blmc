@@ -1,4 +1,6 @@
 *~
 *.swp
 *.pyc
+build/
+*.egg-info
 logged_data.txt

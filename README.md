@@ -26,7 +26,7 @@ firmware is running on the board.
 Requirements
 ============
 
-* [python-can](https://python-can.readthedocs.io/en/latest/index.html)  
+* [python-can](https://python-can.readthedocs.io/en/master/)  
   _Note: When using on Windows with PCAN, make sure you have version >= 1.5.1_
 * numpy
 * LaunchPad with two motors, running the dual_motor_torque_ctrl program and
@@ -39,8 +39,7 @@ Installation
 1. Make sure python-can is installed and set up correctly (see documentation
    there).
     * The CAN interface and channel have to be set in the configuration file,
-      see [python-can
-      documentation](https://python-can.readthedocs.io/en/latest/configuration.html)
+      see [python-can documentation](https://python-can.readthedocs.io/en/master/configuration.html)
 2. Some of the demo scripts need a prior calibration the offset between zero and
    stop position of the leg. Run the script `calibrate.py` (see below) to do
    this.

@@ -3,7 +3,7 @@ Example Scripts
 
 The `scripts` directory contains a bunch of scripts that can be used to test
 the motor control board and serve as examples on how to use the CAN API
-implemented in the blmc package.
+implemented in the `python_blmc` package.
 
 Scripts that are prefixed with "leg_" are only meant for use with the hopper
 leg prototype #1 (note that leg #2 is not supported).  The other scripts are

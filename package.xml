@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<package>
+<package format="3">
   <name>python_blmc</name>
   <version>1.0.0</version>
   <description>
@@ -20,7 +20,11 @@
   <author email="felix.widmaier@tue.mpg.de">Felix Widmaier</author>
   <maintainer email="felix.widmaier@tue.mpg.de">Felix Widmaier</maintainer>
 
-  <buildtool_depend>catkin</buildtool_depend>
-  <run_depend>python-can</run_depend>
+  <buildtool_depend>ament_python</buildtool_depend>
 
+  <exec_depend>python-can</exec_depend>
+
+  <export>
+      <build_type>ament_python</build_type>
+  </export>
 </package>
