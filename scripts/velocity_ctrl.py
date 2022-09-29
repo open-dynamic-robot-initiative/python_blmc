@@ -7,18 +7,14 @@ motor 1 with a simple PI controller.  The velocity reference is given by a
 potentiometer that is connected to ADCINA6.
 """
 
-import os
-import struct
 import time
 import can
 import signal
 import sys
 import traceback
-from blmc.pid import PID
-from blmc.conversion import q_bytes_to_value, value_to_q_bytes
-from blmc.motor_data import *
+from blmc.motor_data import MotorData, AdcResult, MessageHandler, ArbitrationIds
 from blmc.controllers import VelocityController
-from blmc.can_helper import *
+from blmc.can_helper import send_mtr_current
 
 BITRATE = 1e6
 
@@ -114,7 +110,7 @@ if __name__ == "__main__":
     for msg in bus:
         try:
             msg_handler.handle_msg(msg)
-        except:
+        except Exception:
             print("\n\n=========== ERROR ============")
             print(traceback.format_exc())
             send_msg(bus, msg_disable_system)
