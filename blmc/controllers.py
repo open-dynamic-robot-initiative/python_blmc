@@ -1,7 +1,6 @@
 """
 Controllers
 """
-import time
 from .pid import PID
 from .motor_data import MotorData
 
@@ -34,13 +33,14 @@ class PositionController:
 
         if verbose:
             print(
-                (
-                    "RefPos = {},\t\tPos = {:.4f}\t\tIqRef = {:.4f}\t\tdt [ms] = {:.2f}".format(
-                        refpos,
-                        self._mtr.position.value,
-                        self.iqref,
-                        self._pid.dt * 1000.0,
-                    )
+                "RefPos = {},"
+                "\t\tPos = {:.4f}"
+                "\t\tIqRef = {:.4f}"
+                "\t\tdt [ms] = {:.2f}".format(
+                    refpos,
+                    self._mtr.position.value,
+                    self.iqref,
+                    self._pid.dt * 1000.0,
                 )
             )
 
@@ -71,12 +71,13 @@ class VelocityController:
         self.iqref = max(self.iqref, -self._maxval)
 
         print(
-            (
-                "RefSpeed = {},\t\tSpeed = {:.4f}\t\tIqRef = {:.4f}\t\tdt [ms] = {:.0f}".format(
-                    refspeed,
-                    self._mtr.velocity.value,
-                    self.iqref,
-                    self._pid.dt * 1000.0,
-                )
+            "RefSpeed = {:.4f}"
+            "    Speed = {:.4f}"
+            "    IqRef = {:.4f}"
+            "    dt [ms] = {:.0f}".format(
+                refspeed,
+                self._mtr.velocity.value,
+                self.iqref,
+                self._pid.dt * 1000.0,
             )
         )
