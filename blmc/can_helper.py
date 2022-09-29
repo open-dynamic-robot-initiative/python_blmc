@@ -28,7 +28,7 @@ def send_command(bus, cmd_id, value):
     msg = can.Message(
         arbitration_id=ArbitrationIds.command,
         data=[0, 0, 0, value, 0, 0, 0, cmd_id],
-        extended_id=False,
+        is_extended_id=False,
     )
     send_msg(bus, msg)
 
@@ -47,7 +47,7 @@ def send_mtr_current(bus, mtr1_iqref, mtr2_iqref):
     data[0:4] = value_to_q_bytes(mtr1_iqref)
     data[4:8] = value_to_q_bytes(mtr2_iqref)
 
-    msg = can.Message(arbitration_id=0x005, data=data, extended_id=False)
+    msg = can.Message(arbitration_id=0x005, data=data, is_extended_id=False)
     send_msg(bus, msg)
 
 

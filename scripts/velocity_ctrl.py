@@ -24,19 +24,19 @@ BITRATE = 1e6
 
 
 msg_enable_motor1 = can.Message(
-    arbitration_id=0x000, data=[0, 0, 0, 1, 0, 0, 0, 2], extended_id=False
+    arbitration_id=0x000, data=[0, 0, 0, 1, 0, 0, 0, 2], is_extended_id=False
 )
 
 msg_disable_motor1 = can.Message(
-    arbitration_id=0x000, data=[0, 0, 0, 0, 0, 0, 0, 2], extended_id=False
+    arbitration_id=0x000, data=[0, 0, 0, 0, 0, 0, 0, 2], is_extended_id=False
 )
 
 msg_ensable_system = can.Message(
-    arbitration_id=0x000, data=[0, 0, 0, 1, 0, 0, 0, 1], extended_id=False
+    arbitration_id=0x000, data=[0, 0, 0, 1, 0, 0, 0, 1], is_extended_id=False
 )
 
 msg_disable_system = can.Message(
-    arbitration_id=0x000, data=[0, 0, 0, 0, 0, 0, 0, 1], extended_id=False
+    arbitration_id=0x000, data=[0, 0, 0, 0, 0, 0, 0, 1], is_extended_id=False
 )
 
 

@@ -144,10 +144,10 @@ class OptoForceConfig:
     def send_via_can(self, bus, arbitration_id=0x101):
         data = self.get_can_bytes()
         msg1 = can.Message(
-            arbitration_id=arbitration_id, data=data[0], extended_id=False
+            arbitration_id=arbitration_id, data=data[0], is_extended_id=False
         )
         msg2 = can.Message(
-            arbitration_id=arbitration_id, data=data[1], extended_id=False
+            arbitration_id=arbitration_id, data=data[1], is_extended_id=False
         )
 
         try:
