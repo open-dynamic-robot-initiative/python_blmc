@@ -2,7 +2,7 @@
 """
 Small working example on how to access CAN bus.
 """
-from __future__ import print_function
+
 import can
 import time
 import blmc.motor_data as md

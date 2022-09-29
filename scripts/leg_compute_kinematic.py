@@ -8,7 +8,7 @@ First the joint positions are initialized, then the script starts to print
  * joint positions from inverse kinematics (based on foot position)
  * Whether or not the current pose is safe (= inside the allowed working range)
 """
-from __future__ import print_function
+
 import sys
 import can
 import numpy as np

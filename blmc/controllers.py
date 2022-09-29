@@ -34,8 +34,8 @@ class PositionController:
 		self.iqref = max(self.iqref, -self._maxval)
 
 		if verbose:
-			print("RefPos = {},\t\tPos = {:.4f}\t\tIqRef = {:.4f}\t\tdt [ms] = {:.2f}".format(
-				refpos, self._mtr.position.value, self.iqref, self._pid.dt*1000.0))
+			print(("RefPos = {},\t\tPos = {:.4f}\t\tIqRef = {:.4f}\t\tdt [ms] = {:.2f}".format(
+				refpos, self._mtr.position.value, self.iqref, self._pid.dt*1000.0)))
 
 
 class VelocityController:
@@ -64,5 +64,5 @@ class VelocityController:
 		self.iqref = min(self.iqref, self._maxval)
 		self.iqref = max(self.iqref, -self._maxval)
 
-		print("RefSpeed = {},\t\tSpeed = {:.4f}\t\tIqRef = {:.4f}\t\tdt [ms] = {:.0f}".format(
-			refspeed, self._mtr.velocity.value, self.iqref, self._pid.dt*1000.0))
+		print(("RefSpeed = {},\t\tSpeed = {:.4f}\t\tIqRef = {:.4f}\t\tdt [ms] = {:.0f}".format(
+			refspeed, self._mtr.velocity.value, self.iqref, self._pid.dt*1000.0)))

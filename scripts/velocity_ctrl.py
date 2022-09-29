@@ -6,7 +6,7 @@ This is a small example on how to access CAN bus.  It controls the velocity of
 motor 1 with a simple PI controller.  The velocity reference is given by a
 potentiometer that is connected to ADCINA6.
 """
-from __future__ import print_function
+
 import os
 import struct
 import time

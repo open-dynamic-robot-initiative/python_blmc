@@ -4,7 +4,7 @@ Small working example for a position controller
 
 Use sliders on ADC A6 and B6 to set the position reference for the two motors.
 """
-from __future__ import print_function
+
 import os
 import time
 import can
@@ -55,7 +55,7 @@ if __name__ == "__main__":
 
     start_system(bus, mtr_data, init_position=False)
 
-    raw_input("Move both sliders to zero. Then press Enter to start motor"
+    input("Move both sliders to zero. Then press Enter to start motor"
               " position control")
 
     # Make sure we have the latest position data

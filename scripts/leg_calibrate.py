@@ -4,10 +4,10 @@ Calibrate the stop offsets for position initialization.
 
 The result is written to the file `calibration_data.p`.
 """
-from __future__ import print_function
+
 import can
 import numpy as np
-import cPickle as pickle
+import pickle as pickle
 import blmc.motor_data as md
 import blmc.can_helper as ch
 from blmc.helper import get_time
@@ -25,7 +25,7 @@ if __name__ == "__main__":
 
     ch.send_command(bus, ch.Command.send_position, 1)
 
-    raw_input("Move both joints in positive direction until stop."
+    input("Move both joints in positive direction until stop."
               " Then press enter.")
     start = get_time()
     for msg in bus:
@@ -37,7 +37,7 @@ if __name__ == "__main__":
                 break
 
 
-    raw_input("Now move the leg to the zero position (fully stretched,"
+    input("Now move the leg to the zero position (fully stretched,"
               " poiting downwards). Then press enter.")
     start = get_time()
     for msg in bus:

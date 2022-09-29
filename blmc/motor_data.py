@@ -1,7 +1,7 @@
 """
 Helper classes to interpret data send by the board
 """
-import cPickle as pickle
+import pickle as pickle
 from .conversion import *
 from .helper import get_time
 
@@ -171,7 +171,7 @@ def init_position_offset(bus, mtr_data, calibration_file="calibration_data.p"):
     stop_offsets = pickle.load(open(calibration_file, "rb"))
     zero_offsets = None
 
-    raw_input("Move both joints in positive direction until stop."
+    input("Move both joints in positive direction until stop."
               " Then press enter")
     start = get_time()
     for msg in bus:

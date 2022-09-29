@@ -27,7 +27,7 @@ Note that in this mode touchdown detection is done based on motor torques and
 different gains for the PD controller are used depending on if the leg touches
 the ground or not.
 """
-from __future__ import print_function
+
 import os
 import can
 import signal
@@ -299,7 +299,7 @@ if __name__ == "__main__":
 
     start_system(bus, mtr_data)
 
-    raw_input("Press Enter to start foot position control")
+    input("Press Enter to start foot position control")
 
     # Make sure we have the latest position data
     update_position(bus, mtr_data, 0.5)

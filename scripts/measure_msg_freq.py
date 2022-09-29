@@ -8,7 +8,7 @@ values.
 
 Can be used to evaluate the CAN connection.
 """
-from __future__ import print_function
+
 import sys
 import can
 import numpy as np

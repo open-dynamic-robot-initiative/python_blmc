@@ -5,7 +5,7 @@ Move the leg joints based on sine curves.
 This is a simple example on how to run a position controller on the leg, where
 the position reference of each joint is given by a sine function.
 """
-from __future__ import print_function
+
 import os
 import can
 import signal
@@ -102,7 +102,7 @@ if __name__ == "__main__":
 
     start_system(bus, mtr_data)
 
-    raw_input("Move leg to zero position and press enter to start movement.")
+    input("Move leg to zero position and press enter to start movement.")
 
     # Make sure we have the latest position data
     update_position(bus, mtr_data, 0.5)

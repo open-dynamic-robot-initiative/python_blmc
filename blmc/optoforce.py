@@ -188,6 +188,6 @@ class OptoForcePacketReceiver:
         else:
             # if not beginning with header but we dont already have the first
             # part
-            print("Unexpected package {}".format(
-                [int(x) for x in fdata]))
+            print(("Unexpected package {}".format(
+                [int(x) for x in fdata])))
             return None

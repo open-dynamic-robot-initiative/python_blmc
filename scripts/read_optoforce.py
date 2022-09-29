@@ -2,7 +2,7 @@
 """
 Example on how the get data from the OptoForce sensor via CAN.
 """
-from __future__ import print_function
+
 import os
 import ctypes
 import struct
@@ -23,7 +23,7 @@ def handle_package(data):
         pkt.set_packet_bytes(data)
         total = (pkt.fx_N**2 + pkt.fy_N**2 + pkt.fz_N**2) ** (0.5)
         print("{}, total: {:.2f}".format(pkt.to_string(), total))
-    except ValueError, e:
+    except ValueError as e:
         print("Error: {}".format(e))
 
 
