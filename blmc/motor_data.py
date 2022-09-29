@@ -13,14 +13,13 @@ class ArbitrationIds:
     velocity = 0x040
     adc6 = 0x050
     optoforce_trans = 0x100
-    optoforce_recv  = 0x101
+    optoforce_recv = 0x101
 
     command = 0x000
     current_ref = 0x005
 
 
 class MessageHandler:
-
     def __init__(self):
         self._id_fnx_map = {}
 
@@ -48,7 +47,8 @@ class MotorDataStruct:
 
     def to_string(self):
         return "Iq: {:.3f},  Pos: {:.3f},  Speed: {:.3f}".format(
-                self.current.value, self.position.value, self.velocity.value)
+            self.current.value, self.position.value, self.velocity.value
+        )
 
 
 def MDL(data):
@@ -60,8 +60,10 @@ def MDH(data):
 
 
 def _conv_stamp_2val_q_msg(msg):
-    return (StampedValue(q_bytes_to_value(MDL(msg.data)), msg.timestamp),
-            StampedValue(q_bytes_to_value(MDH(msg.data)), msg.timestamp))
+    return (
+        StampedValue(q_bytes_to_value(MDL(msg.data)), msg.timestamp),
+        StampedValue(q_bytes_to_value(MDH(msg.data)), msg.timestamp),
+    )
 
 
 class MotorData:
@@ -69,7 +71,7 @@ class MotorData:
         self.mtr1 = MotorDataStruct()
         self.mtr2 = MotorDataStruct()
         self.status = Status()
-        self._zero_pos_offset = (0., 0.)
+        self._zero_pos_offset = (0.0, 0.0)
 
     def set_zero_position_offset(self, offset, apply_immediately=True):
         self._zero_pos_offset = offset
@@ -84,10 +86,8 @@ class MotorData:
         (self.mtr1.current, self.mtr2.current) = _conv_stamp_2val_q_msg(msg)
 
     def set_position(self, msg):
-        (self.mtr1.raw_position, self.mtr2.raw_position) = \
-                _conv_stamp_2val_q_msg(msg)
-        (self.mtr1.position, self.mtr2.position) = \
-                _conv_stamp_2val_q_msg(msg)
+        (self.mtr1.raw_position, self.mtr2.raw_position) = _conv_stamp_2val_q_msg(msg)
+        (self.mtr1.position, self.mtr2.position) = _conv_stamp_2val_q_msg(msg)
 
         # subtract zero position offset from raw position
         self.mtr1.position.value -= self._zero_pos_offset[0]
@@ -98,9 +98,8 @@ class MotorData:
 
     def to_string(self):
         return "{} | MTR1: {}\t | MTR2: {}".format(
-                self.status.to_string(),
-                self.mtr1.to_string(),
-                self.mtr2.to_string())
+            self.status.to_string(), self.mtr1.to_string(), self.mtr2.to_string()
+        )
 
 
 class Status:
@@ -171,17 +170,16 @@ def init_position_offset(bus, mtr_data, calibration_file="calibration_data.p"):
     stop_offsets = pickle.load(open(calibration_file, "rb"))
     zero_offsets = None
 
-    input("Move both joints in positive direction until stop."
-              " Then press enter")
+    input("Move both joints in positive direction until stop." " Then press enter")
     start = get_time()
     for msg in bus:
         if msg.arbitration_id == ArbitrationIds.position:
             if start < get_time() - 1:
                 mtr_data.set_position(msg)
-                zero_offsets = (mtr_data.mtr1.position.value - stop_offsets[0],
-                                mtr_data.mtr2.position.value - stop_offsets[1])
+                zero_offsets = (
+                    mtr_data.mtr1.position.value - stop_offsets[0],
+                    mtr_data.mtr2.position.value - stop_offsets[1],
+                )
                 print("Okay, now release the leg.")
                 mtr_data.set_zero_position_offset(zero_offsets)
                 break
-
-

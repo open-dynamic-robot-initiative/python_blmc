@@ -39,15 +39,14 @@ if __name__ == "__main__":
 
     # setup sigint handler to disable motor on CTRL+C
     def sigint_handler(signal, frame):
-            print('Stop motor and shut down.')
-            stop_system(bus)
-            sys.exit(0)
+        print("Stop motor and shut down.")
+        stop_system(bus)
+        sys.exit(0)
+
     signal.signal(signal.SIGINT, sigint_handler)
 
-    print("Setup controller 1 with Kp = {}, Ki = {}, Kd = {}".format(
-        Kp1, Ki1, Kd1))
-    print("Setup controller 2 with Kp = {}, Ki = {}, Kd = {}".format(
-        Kp2, Ki2, Kd2))
+    print("Setup controller 1 with Kp = {}, Ki = {}, Kd = {}".format(Kp1, Ki1, Kd1))
+    print("Setup controller 2 with Kp = {}, Ki = {}, Kd = {}".format(Kp2, Ki2, Kd2))
     print("Goal position: {}".format(goal_pos))
     print()
     vctrl1 = PositionController(Kp1, Ki1, Kd1)
@@ -55,8 +54,9 @@ if __name__ == "__main__":
 
     start_system(bus, mtr_data, init_position=False)
 
-    input("Move both sliders to zero. Then press Enter to start motor"
-              " position control")
+    input(
+        "Move both sliders to zero. Then press Enter to start motor" " position control"
+    )
 
     # Make sure we have the latest position data
     update_position(bus, mtr_data, 0.5)

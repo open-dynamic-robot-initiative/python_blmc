@@ -61,10 +61,9 @@ def emergency_break(bus):
 
 
 if __name__ == "__main__":
-    #if len(sys.argv) != 8:
+    # if len(sys.argv) != 8:
     #   print("Usage: {} Kp1 Ki1 Kd1 Kp2 Ki2 Kd2".format(sys.argv[0]))
     #   sys.exit(1)
-
 
     if len(sys.argv) == 7:
         Kp1 = float(sys.argv[1])
@@ -82,11 +81,11 @@ if __name__ == "__main__":
 
     # setup sigint handler to disable motor on CTRL+C
     def sigint_handler(signal, frame):
-            print('Stop motor and shut down.')
-            stop_system(bus)
-            sys.exit(0)
-    signal.signal(signal.SIGINT, sigint_handler)
+        print("Stop motor and shut down.")
+        stop_system(bus)
+        sys.exit(0)
 
+    signal.signal(signal.SIGINT, sigint_handler)
 
     mtr_data = MotorData()
     adc = AdcResult()
@@ -94,10 +93,8 @@ if __name__ == "__main__":
     pos_ctrl2 = PositionController(Kp2, Ki2, Kd2)
     t_offset = None
 
-    print("Setup controller 1 with Kp = {}, Ki = {}, Kd = {}".format(
-        Kp1, Ki1, Kd1))
-    print("Setup controller 2 with Kp = {}, Ki = {}, Kd = {}".format(
-        Kp2, Ki2, Kd2))
+    print("Setup controller 1 with Kp = {}, Ki = {}, Kd = {}".format(Kp1, Ki1, Kd1))
+    print("Setup controller 2 with Kp = {}, Ki = {}, Kd = {}".format(Kp2, Ki2, Kd2))
     print()
 
     start_system(bus, mtr_data)
@@ -112,12 +109,13 @@ if __name__ == "__main__":
 
         mtr_data.set_position(msg)
 
-        if ((abs(mtr_data.mtr1.position.value) > 1.1)
-                or (abs(mtr_data.mtr2.position.value) > 1.1)):
+        if (abs(mtr_data.mtr1.position.value) > 1.1) or (
+            abs(mtr_data.mtr2.position.value) > 1.1
+        ):
             emergency_break(bus)
 
         print(mtr_data.to_string())
-        #print(adc.to_string())
+        # print(adc.to_string())
 
         t = get_time()
         if t_offset is None:

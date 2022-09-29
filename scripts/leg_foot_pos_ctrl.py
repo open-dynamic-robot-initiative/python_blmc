@@ -93,13 +93,11 @@ class LinearTrajectory:
 
 
 class PositionMaster:
-
     def get_goal_pos(self, current_pos):
         raise NotImplementedError()
 
 
 class PositionBySlider(PositionMaster):
-
     def __init__(self, adc):
         self._start_up = True
         self._adc = adc
@@ -122,8 +120,7 @@ class PositionBySlider(PositionMaster):
     def _do_start_up(self, current_pos):
         print("*** STARTUP ***")
         if self._start_traj is None:
-            self._start_traj = LinearTrajectory(current_pos, self._slider_pos,
-                    0.03)
+            self._start_traj = LinearTrajectory(current_pos, self._slider_pos, 0.03)
         goal = self._start_traj.next_step()
         if goal is None:
             goal = self._slider_pos
@@ -138,7 +135,6 @@ class State:
 
 
 class JumpTrajectory(PositionMaster):
-
     def __init__(self, ground_contact_state):
         self._state = State.START_UP
         self._gcs = ground_contact_state
@@ -156,7 +152,7 @@ class JumpTrajectory(PositionMaster):
             return self._do_start_up(current_pos)
         elif self._state == State.AIR:
             return self._do_air(current_pos)
-        else: # state == GROUND
+        else:  # state == GROUND
             return self._do_ground()
 
     def get_pid_gains(self):
@@ -164,14 +160,13 @@ class JumpTrajectory(PositionMaster):
             return ((30, 0, 0.15), (15, 0, 0.1))
         elif self._state == State.AIR:
             return ((15, 0, 0.3), (6, 0, 0.23))
-        else: # state == GROUND
+        else:  # state == GROUND
             return ((50, 0, 0.15), (20, 0, 0.1))
 
     def _do_start_up(self, current_pos):
         print("*** STARTUP ***")
         if self._start_traj is None:
-            self._start_traj = LinearTrajectory(
-                    current_pos, self._p_air, 0.05)
+            self._start_traj = LinearTrajectory(current_pos, self._p_air, 0.05)
         goal = self._start_traj.next_step()
         if goal is None:
             goal = self._p_air
@@ -188,7 +183,8 @@ class JumpTrajectory(PositionMaster):
             self._p_kneel[1] = current_pos[1]
             self._p_stretched[1] = current_pos[1]
             self._kneel_down_traj = LinearTrajectory(
-                    start, self._p_kneel, self._kneel_down_speed)
+                start, self._p_kneel, self._kneel_down_speed
+            )
 
         return self._p_air
 
@@ -203,7 +199,6 @@ class JumpTrajectory(PositionMaster):
 
 
 class GroundContactState:
-
     def __init__(self):
         self.on_ground = False  # assume we start in mid-air
 
@@ -237,27 +232,36 @@ class PositionLogger:
 
     def __del__(self):
         with open("logged_data.txt", "w") as fh:
-            fh.write("# time foot_x foot_y foot_x_ref foot_y_ref mtr1_pos"
-                     " mtr1_pos_ref mtr2_pos mtr2_pos_ref\n")
+            fh.write(
+                "# time foot_x foot_y foot_x_ref foot_y_ref mtr1_pos"
+                " mtr1_pos_ref mtr2_pos mtr2_pos_ref\n"
+            )
             for i in range(len(self.time)):
-                fh.write(" ".join([str(x) for x in [
-                    self.time[i],
-                    self.foot_pos[i][0],
-                    self.foot_pos[i][1],
-                    self.foot_pos_ref[i][0],
-                    self.foot_pos_ref[i][1],
-                    self.mtr1_pos[i],
-                    self.mtr1_pos_ref[i],
-                    self.mtr2_pos[i],
-                    self.mtr2_pos_ref[i]
-                    ]]) + "\n")
+                fh.write(
+                    " ".join(
+                        [
+                            str(x)
+                            for x in [
+                                self.time[i],
+                                self.foot_pos[i][0],
+                                self.foot_pos[i][1],
+                                self.foot_pos_ref[i][0],
+                                self.foot_pos_ref[i][1],
+                                self.mtr1_pos[i],
+                                self.mtr1_pos_ref[i],
+                                self.mtr2_pos[i],
+                                self.mtr2_pos_ref[i],
+                            ]
+                        ]
+                    )
+                    + "\n"
+                )
 
 
 if __name__ == "__main__":
     if len(sys.argv) < 2 or sys.argv[1] not in ["slider", "jump"]:
         print("Usage: {} slider|jump".format(sys.argv[0]))
         sys.exit(0)
-
 
     mtr_data = MotorData()
     adc = AdcResult()
@@ -281,20 +285,20 @@ if __name__ == "__main__":
 
     # setup sigint handler to disable motor on CTRL+C
     def sigint_handler(signal, frame):
-            print('Stop motor and shut down.')
-            stop_system(bus)
-            sys.exit(0)
+        print("Stop motor and shut down.")
+        stop_system(bus)
+        sys.exit(0)
+
     signal.signal(signal.SIGINT, sigint_handler)
 
     pid_gains = position_master.get_pid_gains()
     vctrl1 = PositionController(*pid_gains[0])
     vctrl2 = PositionController(*pid_gains[1])
 
-    #print("Initialize OptoForce...")
+    # print("Initialize OptoForce...")
     ofconf = of.OptoForceConfig()
     ofconf.zero()
-    ofconf.set_sample_frequency(
-           of.OptoForceConfig.SampleFreq.Hz_10)
+    ofconf.set_sample_frequency(of.OptoForceConfig.SampleFreq.Hz_10)
     ofconf.send_via_can(bus, ArbitrationIds.optoforce_recv)
 
     start_system(bus, mtr_data)
@@ -303,7 +307,6 @@ if __name__ == "__main__":
 
     # Make sure we have the latest position data
     update_position(bus, mtr_data, 0.5)
-
 
     def on_position_msg(msg):
         global position_ticks
@@ -321,36 +324,36 @@ if __name__ == "__main__":
         tf.update_mtr_data(mtr_data)
 
         print(mtr_data.to_string())
-        #print(adc.to_string())
+        # print(adc.to_string())
 
         foot_pos = tf.foot_position()
 
         if not tf.is_pose_safe():
             raise RuntimeError("EMERGENCY BREAK")
 
-        force = tf.foot_force(
-                mtr_data.mtr1.current.value, mtr_data.mtr2.current.value)
+        force = tf.foot_force(mtr_data.mtr1.current.value, mtr_data.mtr2.current.value)
         print("force (motor): {}".format(force))
         if optoforce.data:
-            of_force_s = np.array([optoforce.data.fx_N,
-                                   optoforce.data.fy_N,
-                                   optoforce.data.fz_N])
+            of_force_s = np.array(
+                [optoforce.data.fx_N, optoforce.data.fy_N, optoforce.data.fz_N]
+            )
             of_force_f = tf.transform_optoforce_to_base(of_force_s)
-            #print("force (opto s):  {}".format(of_force_s))
+            # print("force (opto s):  {}".format(of_force_s))
             print("force (opto f):  {}".format(of_force_f[:2]))
         ground_state.update_state(force)
 
         foot_goal = position_master.get_goal_pos(foot_pos)
 
         foot_pos_error = np.linalg.norm(foot_pos - foot_goal)
-        print("(x,y) = ({:.3f}, {:.3f}) ~ ({:.3f}, {:.3f}), err = {}".format(
-            foot_pos[0], foot_pos[1], foot_goal[0], foot_goal[1],
-            foot_pos_error))
+        print(
+            "(x,y) = ({:.3f}, {:.3f}) ~ ({:.3f}, {:.3f}), err = {}".format(
+                foot_pos[0], foot_pos[1], foot_goal[0], foot_goal[1], foot_pos_error
+            )
+        )
 
-        goal_mpos = np.asarray(kin.inverse_kinematics_mrev(
-            foot_goal[0], foot_goal[1]))
+        goal_mpos = np.asarray(kin.inverse_kinematics_mrev(foot_goal[0], foot_goal[1]))
 
-        #print("(th1, th2) = ({:.3f}, {:.3f}) ~ ({:.3f}, {:.3f})".format(
+        # print("(th1, th2) = ({:.3f}, {:.3f}) ~ ({:.3f}, {:.3f})".format(
         #    tf.th1, tf.th2, goal_mpos[0], goal_mpos[1]))
 
         pid_gains = position_master.get_pid_gains()
@@ -369,8 +372,7 @@ if __name__ == "__main__":
 
         send_mtr_current(bus, vctrl1.iqref, vctrl2.iqref)
 
-        print("loop duration: {:.1f} ms\n".format(
-            (get_time() - loop_start) * 1000))
+        print("loop duration: {:.1f} ms\n".format((get_time() - loop_start) * 1000))
 
     msg_handler = MessageHandler()
     msg_handler.set_id_handler(ArbitrationIds.status, mtr_data.set_status)
@@ -381,9 +383,8 @@ if __name__ == "__main__":
 
     # Don't process OptoForce messages. We don't need them here and the
     # computation is too expensive for the controller.
-    #msg_handler.set_id_handler(ArbitrationIds.optoforce_trans,
+    # msg_handler.set_id_handler(ArbitrationIds.optoforce_trans,
     #        lambda msg: optoforce.receive_frame(msg.data))
-
 
     # wait for messages and update data
     for msg in bus:

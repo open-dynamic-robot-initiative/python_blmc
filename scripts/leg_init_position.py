@@ -36,6 +36,8 @@ if __name__ == "__main__":
 
             if last_print < t - 1:
                 last_print = t
-                print("pos1: {}, pos2: {}".format(
-                    mtr_data.mtr1.position.value,
-                    mtr_data.mtr2.position.value))
+                print(
+                    "pos1: {}, pos2: {}".format(
+                        mtr_data.mtr1.position.value, mtr_data.mtr2.position.value
+                    )
+                )

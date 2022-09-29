@@ -2,8 +2,9 @@
 import sys
 import time
 
+
 def get_time():
-    if sys.platform == 'win32':
+    if sys.platform == "win32":
         # On Windows, the best timer is time.clock
         return time.clock()
     else:

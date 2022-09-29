@@ -4,7 +4,7 @@ Functions to pack/unpack data for/from CAN messages.
 import struct
 
 
-QVAL = 2**24
+QVAL = 2 ** 24
 
 
 def bytes_to_uint16(data):
@@ -33,9 +33,8 @@ def q_bytes_to_value(data):
     fval = float(qval) / QVAL
     return fval
 
+
 def value_to_q_bytes(fval):
     qval = int(fval * QVAL)
     rdata = struct.pack("<i", qval)
     return rdata[::-1]
-
-

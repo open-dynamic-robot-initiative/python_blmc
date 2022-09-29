@@ -25,9 +25,11 @@ def send_command(bus, cmd_id, value):
     # As long as both command id and value do not exceed a single byte, we can
     # keep it that simple :)
     # FIXME make better anyway, otherwise it will break in the future!
-    msg = can.Message(arbitration_id=ArbitrationIds.command,
-            data=[0, 0, 0, value, 0, 0, 0, cmd_id],
-            extended_id=False)
+    msg = can.Message(
+        arbitration_id=ArbitrationIds.command,
+        data=[0, 0, 0, value, 0, 0, 0, cmd_id],
+        extended_id=False,
+    )
     send_msg(bus, msg)
 
 
@@ -35,7 +37,7 @@ def send_msg(bus, msg):
     """Send a single message on the CAN bus."""
     try:
         bus.send(msg)
-        #print("Message sent on {}".format(bus.channel_info))
+        # print("Message sent on {}".format(bus.channel_info))
     except can.CanError:
         print("Message NOT sent")
 
@@ -45,9 +47,7 @@ def send_mtr_current(bus, mtr1_iqref, mtr2_iqref):
     data[0:4] = value_to_q_bytes(mtr1_iqref)
     data[4:8] = value_to_q_bytes(mtr2_iqref)
 
-    msg = can.Message(arbitration_id=0x005,
-            data=data,
-            extended_id=False)
+    msg = can.Message(arbitration_id=0x005, data=data, extended_id=False)
     send_msg(bus, msg)
 
 
@@ -64,6 +64,7 @@ def update_position(bus, mtr_data, wait_period):
             if start < get_time() - wait_period:
                 mtr_data.set_position(msg)
                 return
+
 
 def wait_for_motors_ready(bus, mtr_data):
     """Block until both motors are ready."""
@@ -88,6 +89,7 @@ def start_system(bus, mtr_data, init_position=True):
     wait_for_motors_ready(bus, mtr_data)
     if init_position:
         init_position_offset(bus, mtr_data)
+
 
 def stop_system(bus):
     send_command(bus, Command.enable_sys, 0)

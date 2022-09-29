@@ -40,13 +40,18 @@ if __name__ == "__main__":
 
             if last_print < t - 1:
                 print()
-                print("th1: {:.2f}\t th2: {:.2f}".format(tf.th1*180/np.pi,
-                                                         tf.th2*180/np.pi))
-                print("x: {:.2f}\t y: {:.2f}".format(foot_0[0]*100,
-                                                     foot_0[1]*100))
+                print(
+                    "th1: {:.2f}\t th2: {:.2f}".format(
+                        tf.th1 * 180 / np.pi, tf.th2 * 180 / np.pi
+                    )
+                )
+                print("x: {:.2f}\t y: {:.2f}".format(foot_0[0] * 100, foot_0[1] * 100))
                 (ith1, ith2) = kin.inverse_kinematics(foot_0[0], foot_0[1])
-                print("IK: th1: {:.2f}\t th2: {:.2f}".format(ith1*180/np.pi,
-                                                           ith2*180/np.pi))
+                print(
+                    "IK: th1: {:.2f}\t th2: {:.2f}".format(
+                        ith1 * 180 / np.pi, ith2 * 180 / np.pi
+                    )
+                )
                 if tf.is_pose_safe():
                     print("Pose is safe.")
                 else:

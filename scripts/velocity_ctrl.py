@@ -23,28 +23,28 @@ from blmc.can_helper import *
 BITRATE = 1e6
 
 
-msg_enable_motor1 = can.Message(arbitration_id=0x000,
-        data=[0, 0, 0, 1, 0, 0, 0, 2],
-        extended_id=False)
+msg_enable_motor1 = can.Message(
+    arbitration_id=0x000, data=[0, 0, 0, 1, 0, 0, 0, 2], extended_id=False
+)
 
-msg_disable_motor1 = can.Message(arbitration_id=0x000,
-        data=[0, 0, 0, 0, 0, 0, 0, 2],
-        extended_id=False)
+msg_disable_motor1 = can.Message(
+    arbitration_id=0x000, data=[0, 0, 0, 0, 0, 0, 0, 2], extended_id=False
+)
 
-msg_ensable_system = can.Message(arbitration_id=0x000,
-        data=[0, 0, 0, 1, 0, 0, 0, 1],
-        extended_id=False)
+msg_ensable_system = can.Message(
+    arbitration_id=0x000, data=[0, 0, 0, 1, 0, 0, 0, 1], extended_id=False
+)
 
-msg_disable_system = can.Message(arbitration_id=0x000,
-        data=[0, 0, 0, 0, 0, 0, 0, 1],
-        extended_id=False)
+msg_disable_system = can.Message(
+    arbitration_id=0x000, data=[0, 0, 0, 0, 0, 0, 0, 1], extended_id=False
+)
 
 
 def send_msg(bus, msg):
     """Send a single message on the CAN bus."""
     try:
         bus.send(msg)
-        #print("Message sent on {}".format(bus.channel_info))
+        # print("Message sent on {}".format(bus.channel_info))
     except can.CanError:
         print("Message NOT sent")
 
@@ -64,12 +64,12 @@ if __name__ == "__main__":
 
     # setup sigint handler to disable motor on CTRL+C
     def sigint_handler(signal, frame):
-            print('Stop motor and shut down.')
-            send_mtr_current(bus, 0, 0)
-            send_msg(bus, msg_disable_motor1)
-            sys.exit(0)
-    signal.signal(signal.SIGINT, sigint_handler)
+        print("Stop motor and shut down.")
+        send_mtr_current(bus, 0, 0)
+        send_msg(bus, msg_disable_motor1)
+        sys.exit(0)
 
+    signal.signal(signal.SIGINT, sigint_handler)
 
     print("Setup controller with Kp = {}, Ki = {}".format(Kp, Ki))
     print("Goal speed: {}".format(goal_speed))
@@ -79,7 +79,7 @@ if __name__ == "__main__":
     send_msg(bus, msg_ensable_system)
 
     print("Enable motor...")
-    send_mtr_current(bus, 0, 0) # start with zero
+    send_mtr_current(bus, 0, 0)  # start with zero
     send_msg(bus, msg_enable_motor1)
 
     # wait a second for the initial messages to be handled

@@ -8,29 +8,26 @@ from . import conversion as cnv
 # OptoForce OMD-20-SE-40N, S/N: ISE0A129
 # 40 N @ 16037 counts
 def counts_to_newton(counts):
-    return counts / 16037. * 40.
+    return counts / 16037.0 * 40.0
 
 
 class OptoForceStatusBits(ctypes.LittleEndianStructure):
     _fields_ = [
-            ("sensor_number", ctypes.c_uint16, 3),    # bit 0:2
-            ("multiple_sensors", ctypes.c_uint16, 1), # bit 3
-            ("overload_tz", ctypes.c_uint16, 1),      # bit 4
-            ("overload_ty", ctypes.c_uint16, 1),      # bit 5
-            ("overload_tx", ctypes.c_uint16, 1),      # bit 6
-            ("overload_fz", ctypes.c_uint16, 1),      # bit 7
-            ("overload_fy", ctypes.c_uint16, 1),      # bit 8
-            ("overload_fx", ctypes.c_uint16, 1),      # bit 9
-            ("sensor_error", ctypes.c_uint16, 3),     # bit 10:12
-            ("daq_error", ctypes.c_uint16, 3),        # bit 13:15
-            ]
+        ("sensor_number", ctypes.c_uint16, 3),  # bit 0:2
+        ("multiple_sensors", ctypes.c_uint16, 1),  # bit 3
+        ("overload_tz", ctypes.c_uint16, 1),  # bit 4
+        ("overload_ty", ctypes.c_uint16, 1),  # bit 5
+        ("overload_tx", ctypes.c_uint16, 1),  # bit 6
+        ("overload_fz", ctypes.c_uint16, 1),  # bit 7
+        ("overload_fy", ctypes.c_uint16, 1),  # bit 8
+        ("overload_fx", ctypes.c_uint16, 1),  # bit 9
+        ("sensor_error", ctypes.c_uint16, 3),  # bit 10:12
+        ("daq_error", ctypes.c_uint16, 3),  # bit 13:15
+    ]
 
 
 class OptoForceStatus(ctypes.Union):
-    _fields_ = [
-            ("bits", OptoForceStatusBits),
-            ("all", ctypes.c_uint16)
-            ]
+    _fields_ = [("bits", OptoForceStatusBits), ("all", ctypes.c_uint16)]
     _anonymous_ = ("bits",)
 
     class DaqErrorType:
@@ -46,7 +43,6 @@ class OptoForceStatus(ctypes.Union):
 
 
 class OptoForceDataPacket31:
-
     def __init__(self):
         self._header = b"\xAA\x07\x08\x0A"
         self.sample_counter = None
@@ -70,7 +66,9 @@ class OptoForceDataPacket31:
         checksum = cnv.bytes_to_uint16(data[14:16])
         # checksum = sum of all preceding bytes, including header
         if checksum != sum(data[:14]):
-            raise ValueError("Invalid checksum. Packet: {}".format([hex(x) for x in data]))
+            raise ValueError(
+                "Invalid checksum. Packet: {}".format([hex(x) for x in data])
+            )
 
         self.sample_counter = cnv.bytes_to_uint16(data[4:6])
         self.status = OptoForceStatus()
@@ -84,17 +82,18 @@ class OptoForceDataPacket31:
         self.fz_N = counts_to_newton(self.fz)
 
     def to_string(self):
-        #return "x: {}, y: {}, z: {}".format(self.fx, self.fy, self.fz)
-        return "x: {:.3f} N, y: {:.3f} N, z: {:.3f} N".format(self.fx_N, self.fy_N, self.fz_N)
+        # return "x: {}, y: {}, z: {}".format(self.fx, self.fy, self.fz)
+        return "x: {:.3f} N, y: {:.3f} N, z: {:.3f} N".format(
+            self.fx_N, self.fy_N, self.fz_N
+        )
 
 
 class OptoForceConfig:
-
     class SampleFreq:
         STOP = 0
         Hz_1000 = 1
         Hz_333 = 3
-        Hz_100 = 10 # default
+        Hz_100 = 10  # default
         Hz_30 = 33
         Hz_10 = 100
 
@@ -103,9 +102,9 @@ class OptoForceConfig:
         Hz_500 = 1
         Hz_150 = 2
         Hz_50 = 3
-        Hz_15 = 4 # default
+        Hz_15 = 4  # default
         Hz_5 = 5
-        Hz_1_5 = 6 # 1.5 Hz
+        Hz_1_5 = 6  # 1.5 Hz
 
     class SetZero:
         ZERO = 255
@@ -145,13 +144,11 @@ class OptoForceConfig:
     def send_via_can(self, bus, arbitration_id=0x101):
         data = self.get_can_bytes()
         msg1 = can.Message(
-                arbitration_id = arbitration_id,
-                data = data[0],
-                extended_id=False)
+            arbitration_id=arbitration_id, data=data[0], extended_id=False
+        )
         msg2 = can.Message(
-                arbitration_id = arbitration_id,
-                data = data[1],
-                extended_id=False)
+            arbitration_id=arbitration_id, data=data[1], extended_id=False
+        )
 
         try:
             bus.send(msg1)
@@ -161,14 +158,13 @@ class OptoForceConfig:
 
 
 class OptoForcePacketReceiver:
-
     def __init__(self):
         self._pkt_bytes = None
         self.data = None
 
     def receive_frame(self, fdata):
         # check for header 0xAA07080A
-        if fdata[0:4] == b"\xAA\x07\x08\x0A": #[0xAA, 0x07, 0x08, 0x0A]:
+        if fdata[0:4] == b"\xAA\x07\x08\x0A":  # [0xAA, 0x07, 0x08, 0x0A]:
             self._pkt_bytes = fdata
             return None
 
@@ -188,6 +184,5 @@ class OptoForcePacketReceiver:
         else:
             # if not beginning with header but we dont already have the first
             # part
-            print(("Unexpected package {}".format(
-                [int(x) for x in fdata])))
+            print(("Unexpected package {}".format([int(x) for x in fdata])))
             return None
