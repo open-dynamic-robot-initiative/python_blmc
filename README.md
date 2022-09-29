@@ -4,8 +4,10 @@ Python BrushLess Motor Control
 
 --------------------------------------------------------------------------------
 
-**Note:** This package was developed some time ago using catkin/Python 2 and has
-not been tested with Python 3 yet.
+**Note:** This package was mostly unmaintained for a while.  The master branch
+is now ported to Python 3 but not much testing has been done yet, so not
+everything may work out of the box.
+For the old catkin/Python2-version see the `v1.0.0` tag.
 
 --------------------------------------------------------------------------------
 
