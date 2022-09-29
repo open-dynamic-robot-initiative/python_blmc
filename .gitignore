@@ -4,3 +4,4 @@
 build/
 *.egg-info
 logged_data.txt
+venv_pyblmc/
