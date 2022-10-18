@@ -25,6 +25,13 @@ This assumes that the CAN-firmware from
 is running on the board.
 
 
+**Note:** This package is mostly meant for quick tests of the hardware.  It is
+not optimised for speed, so for actual control applications where a high control
+rate is important, we recommend to use the C++ API instead, see the
+[blmc_drivers](https://github.com/open-dynamic-robot-initiative/blmc_drivers)
+package.
+
+
 Requirements
 ============
 
